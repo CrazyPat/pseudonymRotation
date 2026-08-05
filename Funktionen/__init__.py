@@ -1,14 +1,5 @@
 """
-Funktionen-Paket, aufgeteilt in zwei Bereiche:
-
-- Funktionen.pseudonym   -> Pseudonym-Rotation (Lifecycle, Zuweisungslogik,
-                             Preprocessing, UserSimulation)
-- Funktionen.auswertung  -> Auswertung/Sweep (Vokabular, Baseline-Matrix,
-                             Konfigurations-Evaluierung, Scoring, run_sweep)
-
-Die wichtigsten Symbole werden hier zusätzlich re-exportiert, damit
-z.B. `from Funktionen import run_sweep, PipelineConfig` weiterhin
-funktioniert.
+ Alle Funktionen, die für die Simulation und Auswertung benötigt werden.
 """
 
 from .config import PipelineConfig

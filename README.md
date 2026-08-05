@@ -11,6 +11,15 @@ Inhalt ist die Python-Simulations- und Evaluationspipeline für die Bachelorarbe
 ├── Funktionen/                  # Python-Paket der Simulationspipeline
 │   ├── auswertung/              # Vokabular, Baseline-Matrix, k-NN-Evaluation und Scoring
 │   ├── pseudonym/               # Lifecycle, HMAC-Zuweisung und Nutzersimulation
+│   │   ├── __init__.py          # init
+│   │   ├── evaluation.py        # Kosinus-Ähnlichkeit, k-NN-Accuracy und Utility-Berechnung
+│   │   ├── scoring.py           # Min-Max-Normalisierung, Kniepunkt und Epsilon-Plateau
+│   │   ├── sweep.py             # Parameter-Sweep
+│   │   └── vocabulary.py        # Aufbau des Tracker-Vokabulars und der Baseline-Matrix
+│   │   ├── __init__.py          # init
+│   │   ├── lifecycle.py         # SlotState-Container und Lifecycle
+│   │   ├── simulation.py        # UserSimulation und parallele Chunk-Verarbeitung
+│   │   └── zuweisung.py         # SlotAssigner mit HMAC-SHA256-Zuweisung
 │   ├── config.py                # Datencontainer
 │   └── utils.py                 # Logging-Funktion
 ├── tracker.py                   # Vorverarbeitung des Datensatzes
