@@ -18,8 +18,8 @@ Inhalt ist die Python-Simulations- und Evaluationspipeline für die Bachelorarbe
 │   │   └── vocabulary.py        # Aufbau des Tracker-Vokabulars und der Baseline-Matrix
 │   │   ├── __init__.py          # init
 │   │   ├── lifecycle.py         # SlotState-Container und Lifecycle
-│   │   ├── simulation.py        # UserSimulation und parallele Chunk-Verarbeitung
-│   │   └── zuweisung.py         # SlotAssigner mit HMAC-SHA256-Zuweisung
+│   │   ├── simulation.py        # UserSimulation
+│   │   └── zuweisung.py         # SlotAssigner
 │   ├── config.py                # Datencontainer
 │   └── utils.py                 # Logging-Funktion
 ├── tracker.py                   # Vorverarbeitung des Datensatzes

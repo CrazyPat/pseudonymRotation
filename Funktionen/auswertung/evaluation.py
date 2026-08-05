@@ -28,7 +28,7 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
 
     # Ausgabe der config.
     if verbose:
-        log_status(f"Starte Konfiguration: Slots={cfg.num_slots}, Domains={cfg.max_domains}, Events={cfg.max_events}", True)
+        log_status(f"Slots={cfg.num_slots}, Domains={cfg.max_domains}, Events={cfg.max_events}", True)
     
     all_segments = []
     total_resets = 0
@@ -57,7 +57,7 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
         return None
     
     # Segemente werden sortiert nach Nutzer,Slot und Segment_id damit die Reihenfolge für die Kosinus-Ähnlichkeit korrekt ist.
-    log_status(f"Alle User-Chunks fertig. Total Segmente: {len(all_segments)}. Starte Sortierung", verbose)
+    log_status(f"Total Segmente: {len(all_segments)}.", verbose)
     segments_sorted = sorted(all_segments, key=lambda x: (x["user_id"], x["slot_id"], x["segment_id"]))
     
     # Dimensionen für Sparse Matrix definieren
@@ -65,7 +65,7 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
     num_vocab = len(domain_to_idx)
 
     # Listen für COO-Format
-    log_status(f"Bereite Sparse-Koordinaten vor ({num_segments} x {num_vocab})", verbose)
+    log_status(f"Sparse-Koordinaten ({num_segments} x {num_vocab})", verbose)
     rows = []
     cols = []
     data = []
@@ -94,10 +94,7 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
                 data.append(float(count))
     
     # Erstelle direkt eine CSR-Matrix aus den COO-Arrays
-    log_status("Konvertiere zu CSR-Matrix...", verbose)
     query_matrix = sp.coo_matrix((data, (rows, cols)), shape=(num_segments, num_vocab)).tocsr()
-
-    log_status("Starte Zeilen-Normierung der Matrix", verbose)
     # Berechnet die Norm der Matrix.
     row_norms = np.sqrt(query_matrix.multiply(query_matrix).sum(axis=1).A1)
     # Falls teilen durch 0
@@ -106,8 +103,7 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
     # Normiert die Matrix auf einheitliche Länge 1.0.
     query_matrix = inv_norms.dot(query_matrix)
 
-    log_status("Starte Kosinus-Ähnlichkeit & k-NN-Auswertung", verbose)
-    
+    log_status("Kosinus-Ähnlichkeit und k-NN Auswertung", verbose)
     correct_predictions = {k: 0 for k in k_values}
     cosine_sims = []
 
@@ -154,7 +150,7 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
             matches = (top_users[:, :k] == true_users).any(axis=1)
             correct_predictions[k] += int(matches.sum())
 
-    log_status("Alle Berechnungen für diese Konfiguration abgeschlossen.", verbose)
+    log_status("Konfiguration abgeschlossen.", verbose)
     
     # Durchschnitt zwischen den Segmenten. Fallback auf 0 falls keine Segmente.
     mean_cosine = float(np.mean(cosine_sims)) if cosine_sims else 0.0
