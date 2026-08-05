@@ -161,5 +161,5 @@ def add_scores(
     df_knee = find_knee_point(
         out, util_col="Utility_Score", priv_col="Privacy_Score_Avg"
     )
-    # Plateau-Flag hinzufügen und zurückgeben
+    # Plateau hinzufügen und direkt zurückgeben
     return add_plateau(df_knee, eps=eps)

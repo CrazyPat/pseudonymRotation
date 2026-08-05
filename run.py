@@ -30,7 +30,7 @@ if __name__ == "__main__":
     # slot_configs = [35]
     # domain_configs = [20]
     # event_configs = [450]
-    k_values = [1, 3, 5, 10, 20]
+    # k_values = [1, 3, 5, 10, 20]
 
     results_df = run_sweep(
         df_raw=df_raw,
@@ -45,6 +45,22 @@ if __name__ == "__main__":
         use_parallel=True,
         verbose=True,
     )
+
+    # Speichern der Finalen Ergebnisse.
     if not results_df.empty:
-        results_df.to_csv(BASE_DIR / "Data" / "final_evaluated_sweep.csv", index=False)
-        print("Sweep erfolgreich beendet")
+        out_dir = BASE_DIR / "Data" / "Ergebnisse"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        # Ranking nach kneepoint.
+        df_knee = results_df.sort_values(
+            by=["Plateau_Member", "Chord_Distance", "Anzahl_Slots", "Total_Resets"],
+            ascending=[False, False, True, True]
+        )
+        df_knee.to_csv(out_dir / "kneepoint.csv", index=False)
+
+        # Ranking nach Privatsphäre.
+        df_priv = results_df.sort_values(
+            by=["Privacy_Score_Avg", "Anzahl_Slots", "Total_Resets"],
+            ascending=[False, True, True]
+        )
+        df_priv.to_csv(out_dir / "privacy.csv", index=False)
+        print("Sweep erfolgreich beendet.")
