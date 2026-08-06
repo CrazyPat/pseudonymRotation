@@ -72,7 +72,7 @@ python run.py
 
 * Das Skript verarbeitet die Nutzer parallel über alle CPU-Kerne (`use_parallel=True`). Falls dies nicht passieren soll im run.py bitte auf False setzen.
 * Der Fortschritt wird in `Data/sweep_checkpoint.csv` gespeichert um nach Fehlern oder einem Crash wieder erneut einsteigen zu können.
-* Finales Ergebnis wird unter `Data/final_evaluated_sweep.csv` gespeichert.
+* Finales Ergebnis wird unter gespeichert unter: `Data/kneepoint.csv` (Komplette Pareto-Optimum Evaluation Nutzen + Privacy) `Data/privacy.csv` (Privacy sortiertes Ergebnis mit den sichersten Kombinationen).
 
 ---
 
@@ -95,3 +95,7 @@ Die Evaluierung zwischen Privatsphäre-Schutz und Systemnutzen erfolgt über ein
 * **Utility-Score:** Kombiniert den normalen Retargeting-Nutzen (`Avg_Utility_ThirdParty`) und die Minimierung der Browser-Resets (`Total_Resets`) zu je 50 %.
 * **Pareto-Front und Kniepunkt-Analyse:** Über eine Sekanten-Gerade zwischen den extremsten Punkten wird die Chord_Distance berechnet, um den optimalen Kniepunkt zu bestimmen.
 * **Epsilon-Plateau:** Um zu verhindern, dass praktisch gleichwertige Konfigurationen durch minimale Nachkommastellen-Differenzen verloren gehen, markiert ein Toleranzschwellenwert ($\varepsilon = 0.005 = 0{,}5\,\%$) naheliegende Konfigurationen als Plateau-Mitglieder.
+
+
+## KI-Nutzung
+Zur Unterstützung der Implementierung, Strukturierung und Syntax-Optimierung der Simulationspipeline wurden KI-gestützte Programmierassistenten eingesetzt.
