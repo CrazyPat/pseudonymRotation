@@ -103,7 +103,7 @@ Zur realistischen Abbildung des Surfverhaltens unterscheidet der Algorithmus zwi
 ### Angreifermodell und Pareto-Optimierung
 Die Evaluierung zwischen Privatsphäre-Schutz und Systemnutzen erfolgt über einen Parameter-Sweep bezüglich der Slot-Anzahl ($N$), der Domänen max_domains und der Events max_events. Jede Konfiguration durchläuft die Pseudonym-Rotation und wird über Einzelmetriken bewertet:
 
-**Re-Identifikationsrisiko ($k$-NN-Angreifer):** Jedes Segment wird als $L_2$-normierter Vektor abgebildet und über eine vektorisierte k-NN-Klassifikation ($k \in \{1, 3, 5, 10, 20\}$) gegen die ungeschützte Baseline-Matrix aller 2.148 Nutzer getestet. Daraus wird der durchschnittliche Privacy_Score_Avg gebildet:
+**Re-Identifikationsrisiko ($k$-NN-Angreifer):** Jedes Segment wird als $L_2$-normierter Vektor abgebildet und über eine vektorisierte k-NN-Klassifikation ($k \in \{1, 3, 5, 10, 20\}$) gegen die ungeschützte Baseline-Matrix aller 2.148 Nutzer getestet. Daraus wird der durchschnittliche `Privacy_Score_Avg` gebildet:
 
 **Kosinus-Ähnlichkeit:**
 
@@ -130,7 +130,7 @@ $$\text{Privacy\_Score\_Avg} = \frac{1}{5} \sum_{k \in \{1,3,5,10,20\}} \text{Pr
 
 ### Utility, Pareto-Optimierung und Knepoint-Analyse
 
-Der Utility_Score sowie die Bestimmung des optimalen Kompromisses zwischen Datenschutz und Nutzen als Pareto-Kniepunkt erfolgen über folgende Formeln:
+Der `Utility_Score` sowie die Bestimmung des optimalen Kompromisses zwischen Datenschutz und Nutzen als Pareto-Kniepunkt erfolgen über folgende Formeln:
 
 
 **Avg_Utility_ThirdParty:**
@@ -151,7 +151,7 @@ $$d_{\text{chord}}(P) = \frac{|(p_2 - p_1)u_0 - (u_2 - u_1)p_0 + u_2 p_1 - p_2 u
 Der Kneepoint ($P_{\text{knee}}$) ist die Konfiguration, die diesen Abstand maximiert:
 $$P_{\text{knee}} = \arg\max_{P \in \mathcal{P}} d_{\text{chord}}(P)$$
 
-*Epsilon-Plateau**
+**Epsilon-Plateau**
 
 Minimale Abweichunen sorgen zu keiner Verschlechterung des Systems, deshalb wird ein Toleranz-Plateu mit $\varepsilon = 0{,}005$ Abweichung definiert. Eine Konfiguration gehört zu Plateu wenn der Wert nicht mehr als diese Toleranz abweicht.
 
