@@ -108,21 +108,25 @@ Die Evaluierung zwischen Privatsphäre-Schutz und Systemnutzen erfolgt über ein
 **Kosinus-Ähnlichkeit:**
 
 Misst die Verhaltensähnlichkeit zwischen aufeinanderfolgenden Segmenten desselben Nutzers.
+
 $$\cos(\theta) = \frac{\mathbf{A} \cdot \mathbf{B}}{\|\mathbf{A}\|_2 \cdot \|\mathbf{B}\|_2}$$
 
 **k-NN Accuracy:**
 
 Berechnet ob ein Angreifer ein rotiertes Pseudonym dem ursprünglichen Langzeitprofil zu einem der 2.148 Nutzern zuzuordnen kann.
+
 $$\text{Accuracy}_k = \frac{\text{Korrekt zugeordnete Segmente in Top-}k}{\text{Gesamtzahl aller evaluierten Segmente}}$$
 
 $$\text{Accuracy}_{\text{Avg}} = \frac{1}{5} \sum_{k \in \{1,3,5,10,20\}} \text{Accuracy}_k$$
 
 **Min-Max-Normalisierung:**
+
 $$X_{\text{norm}} = \frac{X - X_{\min}}{X_{\max} - X_{\min}}$$
 
 **Privacy Score:**
 
 Kombiniert den Schutz vor Re-Identifikation und den Schutz vor Verkettung zu jeweils 50 %.
+
 $$\text{PrivacyScore}_k = 0.5 \cdot (1 - X_{\text{norm}}(\text{Accuracy}_k)) + 0.5 \cdot (1 - X_{\text{norm}}(\text{MeanCosine}))$$
 
 $$\text{PrivacyScore}_{\text{Avg}} = \frac{1}{5} \sum_{k \in \{1,3,5,10,20\}} \text{PrivacyScore}_k$$
@@ -134,21 +138,27 @@ Der Utility_Score sowie die Bestimmung des optimalen Kompromisses zwischen Daten
 
 
 **Avg_Utility_ThirdParty:**
+
 Misst die Anzahl an beobachteten Tracker-Interaktionen pro Segment. Hier ist $M$ die Gesamtzahl aller Segmente und $E_{\text{TP}, m}$ die Anzahl der Third-Party-Events im Segment $m$:
-$$\text{Avg\_Utility} = \frac{1}{M} \sum_{m=1}^{M} E_{\text{TP}, m}$$
+
+$$\text{AvgUtility} = \frac{1}{M} \sum_{m=1}^{M} E_{\text{TP}, m}$$
 
 **Total_Resets:**
-$$\text{Total\_Resets} = \sum_{n=1}^{N} R_n$$
+
+$$\text{TotalResets} = \sum_{n=1}^{N} R_n$$
 
 **Utility-Score als scoring.py**
-$$\text{Utility\_Score} = 0{,}5 \cdot X_{\text{norm}}(\text{Avg\_Utility}) + 0{,}5 \cdot (1 - X_{\text{norm}}(\text{Total\_Resets}))$$
+
+$$\text{UtilityScore} = 0.5 \cdot X_{\text{norm}}(\text{AvgUtility}) + 0.5 \cdot (1 - X_{\text{norm}}(\text{TotalResets}))$$
 
 **Chord Distance:**
 
 Das Pareto-Optimum wird die Sekante gesucht zwischen den beiden Extrempunkten ($P_1$ für max.Utility, $P_2$ für max. Datenschutz). Der senkrechte Abstand zu Geraden berchnet sich wie folgt:
+
 $$d_{\text{chord}}(P) = \frac{|(p_2 - p_1)u_0 - (u_2 - u_1)p_0 + u_2 p_1 - p_2 u_1|}{\sqrt{(p_2 - p_1)^2 + (u_2 - u_1)^2}}$$
 
 Der Kneepoint ($P_{\text{knee}}$) ist die Konfiguration, die diesen Abstand maximiert:
+
 $$P_{\text{knee}} = \arg\max_{P \in \mathcal{P}} d_{\text{chord}}(P)$$
 
 **Epsilon-Plateau**
