@@ -123,9 +123,9 @@ $$X_{\text{norm}} = \frac{X - X_{\min}}{X_{\max} - X_{\min}}$$
 **Privacy Score:**
 
 Kombiniert den Schutz vor Re-Identifikation und den Schutz vor Verkettung zu jeweils 50 %.
-$$\text{Privacy\_Score}_k = 0{,}5 \cdot (1 - X_{\text{norm}}(\text{Accuracy}_k)) + 0{,}5 \cdot (1 - X_{\text{norm}}(\text{MeanCosine}))$$
+$$\text{PrivacyScore}_k = 0.5 \cdot (1 - X_{\text{norm}}(\text{Accuracy}_k)) + 0.5 \cdot (1 - X_{\text{norm}}(\text{MeanCosine}))$$
 
-$$\text{Privacy\_Score}_{\text{Avg}} = \frac{1}{5} \sum_{k \in \{1,3,5,10,20\}} \text{Privacy\_Score}_k$$
+$$\text{PrivacyScore}_{\text{Avg}} = \frac{1}{5} \sum_{k \in \{1,3,5,10,20\}} \text{PrivacyScore}_k$$
 
 
 ### Utility, Pareto-Optimierung und Knepoint-Analyse
