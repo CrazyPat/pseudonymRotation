@@ -130,7 +130,7 @@ $$\text{Privacy\_Score\_Avg} = \frac{1}{5} \sum_{k \in \{1,3,5,10,20\}} \text{Pr
 
 ### Utility, Pareto-Optimierung und Knepoint-Analyse
 
-Der `Utility_Score` sowie die Bestimmung des optimalen Kompromisses zwischen Datenschutz und Nutzen als Pareto-Kniepunkt erfolgen über folgende Formeln:
+Der Utility_Score sowie die Bestimmung des optimalen Kompromisses zwischen Datenschutz und Nutzen als Pareto-Kniepunkt erfolgen über folgende Formeln:
 
 
 **Avg_Utility_ThirdParty:**
@@ -154,7 +154,6 @@ $$P_{\text{knee}} = \arg\max_{P \in \mathcal{P}} d_{\text{chord}}(P)$$
 **Epsilon-Plateau**
 
 Minimale Abweichunen sorgen zu keiner Verschlechterung des Systems, deshalb wird ein Toleranz-Plateu mit $\varepsilon = 0{,}005$ Abweichung definiert. Eine Konfiguration gehört zu Plateu wenn der Wert nicht mehr als diese Toleranz abweicht.
-
 
 ---
 
