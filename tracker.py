@@ -57,7 +57,7 @@ def load_whotracksme_mapping() -> pd.DataFrame:
 
         # Existieren Daten in der Liste?
         if mapping_rows:
-            # Df und dduplication.
+            # Df und deduplication.
             df_mapping = pd.DataFrame(mapping_rows).drop_duplicates()
         # Falls keine Daten geladen sind.
         else:
@@ -71,9 +71,9 @@ def load_whotracksme_mapping() -> pd.DataFrame:
 
 
 def run_full_pipeline(
-    input_filepath: str = "Data/browsing.csv",
-    output_clean_csv: str = "Data/browsing_clean.csv",
-    output_json_path: str = "Data/domain_tracker_mapping.json",
+    input_filepath: str = "Data/datensatz/browsing.csv",
+    output_clean_csv: str = "Data/datensatz/browsing_clean.csv",
+    output_json_path: str = "Data/datensatz/domain_tracker_mapping.json",
     # Entfernt ungemappted Domains aus dem Datensatz!
     drop_unmapped: bool = True
 ):
@@ -144,8 +144,8 @@ def run_full_pipeline(
 # main
 if __name__ == "__main__":
     run_full_pipeline(
-        input_filepath="Data/browsing.csv",
-        output_clean_csv="Data/browsing_clean.csv",
-        output_json_path="Data/domain_tracker_mapping.json",
+        input_filepath="Data/datensatz/browsing.csv",
+        output_clean_csv="Data/datensatz/browsing_clean.csv",
+        output_json_path="Data/datensatz/domain_tracker_mapping.json",
         drop_unmapped=True
     )

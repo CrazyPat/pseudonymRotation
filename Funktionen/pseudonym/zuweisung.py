@@ -10,6 +10,7 @@ from typing import Dict, Set
 import numpy as np
 from ..config import PipelineConfig
 
+
 # Service-Object
 class SlotAssigner:
     """Verwaltet die Zuordnung (Domain -> Slot) und (Slot -> Domains)."""

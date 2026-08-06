@@ -1,7 +1,5 @@
 """
-Führt den vollständigen Parameter-Sweep über alle Slot-/Domain-/Event-
-Konfigurationen aus, inkl. Checkpoint-Datei zum Fortsetzen abgebrochener
-Läufe, und liefert die bewertete Ergebnistabelle zurück.
+Führt den vollständigen Parameter-Sweep über alle Konfigurationen aus
 """
 
 import itertools

@@ -3,7 +3,7 @@ import pandas as pd
 
 
 def minmax(series: pd.Series) -> pd.Series:
-    """Standartisiert Wertebereich zwischen 0 und 1.0"""
+    """Standardisiert Wertebereich zwischen 0 und 1.0"""
     # Alle Werte in float.
     s = series.astype(float)
     # Kleinster und größter Wert.
@@ -34,7 +34,7 @@ def find_knee_point(
         out[priv_col].max() - out[priv_col].min()
     )
 
-    # Alle dinaten des Indexes
+    # Alle Koordinaten des Indexes
     n = len(out)
     # Initialisiert Array. Alles zuerst True
     pareto = np.ones(n, dtype=bool)
@@ -145,9 +145,7 @@ def add_scores(
         acc_risk = minmax(out[acc_col])
 
         # Privacy-Score Berechnung --> invertieren damit es ein Schutzwert ist --> Generiert Spalte.
-        out[f"Privacy_Score{k_suffix}"] = 0.5 * (1.0 - acc_risk) + 0.5 * (
-            1.0 - linkability_risk
-        )
+        out[f"Privacy_Score{k_suffix}"] = 0.5 * (1.0 - acc_risk) + 0.5 * (1.0 - linkability_risk)
         # Anfügen an Liste für späteren durchlauf für Durchschnitt
         privacy_cols.append(f"Privacy_Score{k_suffix}")
 

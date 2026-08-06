@@ -5,9 +5,9 @@ from Funktionen import run_sweep
 
 BASE_DIR = Path(__file__).resolve().parent
 
-DATA_PATH = BASE_DIR / "Data" / "browsing_clean.csv"
-TRACKER_MAP_PATH = BASE_DIR / "Data" / "domain_tracker_mapping.json"
-checkpoint_file = BASE_DIR / "Data" / "sweep_checkpoint.csv"
+DATA_PATH = BASE_DIR / "Data" / "datensatz" / "browsing_clean.csv"
+TRACKER_MAP_PATH = BASE_DIR / "Data" / "datensatz" / "single_tracker_mapping.json"
+checkpoint_file = BASE_DIR / "Data" / "datensatz" / "sweep_checkpoint.csv"
 
 if __name__ == "__main__":
     df_raw = pd.read_csv(DATA_PATH)
@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     # Speichern der Finalen Ergebnisse.
     if not results_df.empty:
-        out_dir = BASE_DIR / "Data" / "Ergebnisse"
+        out_dir = BASE_DIR / "Data" / "ergebnisse"
         out_dir.mkdir(parents=True, exist_ok=True)
         # Ranking nach kneepoint.
         df_knee = results_df.sort_values(
