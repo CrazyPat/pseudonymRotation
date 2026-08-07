@@ -5,6 +5,11 @@
 from .config import PipelineConfig
 from .utils import log_status
 
+from .data import (
+    browsing_data,
+    whotracksme_data
+)
+
 from .pseudonym import (
     LifecycleState,
     SlotState,
@@ -25,6 +30,8 @@ from .auswertung import (
 )
 
 __all__ = [
+    "browsing_data",
+    "whotracksme_data",
     "PipelineConfig",
     "log_status",
     "LifecycleState",
