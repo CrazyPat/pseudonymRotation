@@ -92,12 +92,13 @@ class UserSimulation:
             slot.first_event_time = timestamp
         # Zähler erhöhen für Events.
         slot.events_count += 1
+        # Domain wird in Set gespeichert für eindeutige Domains.
+        slot.unique_domains.add(domain)
         # Nimmt Tracker aus dem Mapping. Falls leer dann auch leere Liste.
         associated_trackers = self.tracker_mapping.get(domain, [])
         # Zählt TPT-Events und speichert sie in einem Set für Duplikatsvermeidung.
         for tp_domain in associated_trackers:
             slot.third_party_events_count += 1
-            slot.unique_domains.add(tp_domain)
             slot.domain_counter[tp_domain] += 1
         # Letzter Zeitstempel wird gesetzt, um Inaktivität zu prüfen.
         slot.last_event_time = timestamp
