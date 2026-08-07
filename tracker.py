@@ -1,151 +1,173 @@
-import os
 import json
+import os
+from pathlib import Path
+from typing import Any, Dict, List
+import numpy as np
 import pandas as pd
-
-# MONKEY PATCH
-# Methode 'iteritems' fehlt?
-if not hasattr(pd.Series, 'iteritems'):
-    # 'iteritems' auf die neuere Methode 'items' setzen.
-    pd.Series.iteritems = pd.Series.items
-# Methode 'iteritems' fehlt?
-if not hasattr(pd.DataFrame, 'iteritems'):
-    # 'iteritems' auf 'items' im df setzen.
-    pd.DataFrame.iteritems = pd.DataFrame.items
-
-# WhoTracks.Me-Mappings als df laden.
-def load_whotracksme_mapping() -> pd.DataFrame:
-    """Lädt das Publisher-to-Tracker Mapping direkt aus dem whotracksme-Paket."""
-    try:
-        # Datenquelle.
-        from whotracksme.data.loader import DataSource
-        data = DataSource()
-        mapping_rows = []
-        
-        # Webseiten auslesen ohne das es crashed falls tabelle nicht existiert.
-        df_sites = getattr(data.sites, "df", None)
-        # Existensprüfung.
-        if df_sites is not None and len(df_sites) > 0:
-            # Sucht Spalte für den Domain oder Seitennamen.
-            d_col = next((c for c in df_sites.columns if "domain" in c.lower() or "site" in c.lower()), None)
-            if d_col:
-                # jede Zeile der Tabelle.
-                for _, row in df_sites.iterrows():
-                    # Leerzeichen entfernen und in Kleinbuchstaben.
-                    domain = str(row.get(d_col, "")).strip().lower()
-                    # Leere Einträge oder nan überspringen.
-                    if not domain or domain == "nan":
-                        continue
-                    # Spaltennamen für Tracker.
-                    for col in ["trackers", "top_trackers"]:
-                        # Existenzprüfung.
-                        if col in row and pd.notna(row[col]):
-                            # Tracker-Spalte.
-                            val = row[col]
-                            # Liste oder Tuple
-                            if isinstance(val, (list, tuple)):
-                                for t in val:
-                                    # Trackernamen aus dem String oder Dictionary.
-                                    t_name = t if isinstance(t, str) else t.get("name") or t.get("tracker")
-                                    if t_name:
-                                        # Fügt Domain und Tracker zur Liste hinzu ohne Leerzeichen.
-                                        mapping_rows.append({"domain": domain, "tracker": str(t_name).strip()})
-                            # Prüfen ob einzelner Textstring
-                            elif isinstance(val, str):
-                                # Domain und einzelnem Tracker zur Liste hinzufügen ohne Leerzeichen.
-                                mapping_rows.append({"domain": domain, "tracker": val.strip()})
+from Funktionen.data.load_dataset import browsing_data
+from Funktionen.data.load_whotracksme import whotracksme_data
 
 
-        # Existieren Daten in der Liste?
-        if mapping_rows:
-            # Df und deduplication.
-            df_mapping = pd.DataFrame(mapping_rows).drop_duplicates()
-        # Falls keine Daten geladen sind.
-        else:
-            # Leere df mit korrekten Spaltennamen.
-            df_mapping = pd.DataFrame(columns=["domain", "tracker"])
-        return df_mapping
-
-    # Fehlerbehandlung.
-    except ImportError:
-        raise ImportError("'whotracksme' ist nicht installiert.")
-
-
-def run_full_pipeline(
-    input_filepath: str = "Data/datensatz/browsing.csv",
-    output_clean_csv: str = "Data/datensatz/browsing_clean.csv",
-    output_json_path: str = "Data/datensatz/domain_tracker_mapping.json",
-    # Entfernt ungemappted Domains aus dem Datensatz!
-    drop_unmapped: bool = True
-):
-    # Prüft, ob die angegebene Eingabedatei im Pfad existiert.
-    if not os.path.exists(input_filepath):
-        # Wirft einen Fehler, wenn die Datei nicht gefunden wird.
-        raise FileNotFoundError(f"Eingabedatei nicht gefunden: {input_filepath}")
-
-    print(f"Lese Rohdaten ein: {input_filepath}")
-    # Alle Relevanten Spalten.
-    usecols = ["panelist_id", "domain", "used_at"]
-    # browsing.csv einlesen und nur relevante Spalten verwenden.
-    df_zenodo = pd.read_csv(input_filepath, usecols=usecols, dtype={"panelist_id": str, "domain": str})
-    # Bereinigung.
-    df_zenodo["domain"] = df_zenodo["domain"].astype(str).str.strip().str.lower()
-    # whoTracks.Me Mapping laden.
-    df_mapping = load_whotracksme_mapping()
-    # Leftjoin der beiden dfs.
-    df_merged = pd.merge(df_zenodo, df_mapping, on="domain", how="left")
-
-    # Maske zur Filterung der nicht zugeordnenten Tracker.
-    missing_mask = df_merged["tracker"].isna()
-    # Gemappte Einträge
-    mapped_ratio = (1.0 - (missing_mask.sum() / len(df_merged))) * 100
-    # Ausgabe
-    print(f"Mapping: {mapped_ratio:.2f}% der Einträge gemappt.")
-
-    # Ungemapptes Entfernen?
-    if drop_unmapped:
-        # Nur Trackerzeilen behalten.
-        df_merged = df_merged[~missing_mask].copy()
-    # nan entfernen, sollte aber eigentlich keine mehr geben.
-    df_merged = df_merged.dropna(subset=["panelist_id", "used_at", "domain"])
-
-    # Letzte Bereinigung der Daten.
-    # Dduplication.
-    df_clean = df_merged[["panelist_id", "domain", "used_at"]].drop_duplicates().copy()
-    # Zeitstempel in pd.datetime.
-    df_clean["used_at"] = pd.to_datetime(df_clean["used_at"], errors="coerce")
-    # nan droppen.
-    df_clean = df_clean.dropna(subset=["used_at", "domain", "panelist_id"])
-    # Sortieren aufsteigend nach Nutzer-ID und Zeitstempel.
-    df_clean = df_clean.sort_values(["panelist_id", "used_at"]).reset_index(drop=True)
+def load_wtm_data(sites_path: str, trackers_path: str) -> Dict[str, Dict[str, List[str]]]:
+    """Lädt die WhoTracks.Me csvs und erstellt ein Mapping von Domains zu Trackern, Kategorien und Unternehmen."""
+    # Prüfen ob WTM-Dateien existieren
+    if not os.path.exists(sites_path) or not os.path.exists(trackers_path):
+        raise FileNotFoundError("WhoTracks.Me Dateien nicht gefunden.")
     
-    # Zielordner falls er nicht existiert erstellen.
-    os.makedirs(os.path.dirname(output_clean_csv), exist_ok=True)
-    # Speichern.
-    df_clean.to_csv(output_clean_csv, index=False)
+    # Relationstabelle laden
+    st_df = pd.read_csv(sites_path, usecols=["site", "tracker"])
+    # Site Spalte normalisieren
+    st_df["site"] = st_df["site"].astype(str).str.lower().str.strip()
+    # Tracker Spalte normalisieren
+    st_df["tracker"] = st_df["tracker"].astype(str).str.strip()
 
-    # Json-Datei:
-    tracker_mapping = (
-        # Gruppieren nach Domain und Tracker-Spalte wählen.
-        df_merged.groupby("domain")["tracker"]
-        # Eindeutigen Tracker pro Domain.
-        .unique()
-        # nparray in Liste.
-        .apply(list)
-        # dict umwandeln.
-        .to_dict()
-    )
+    # Metadatentabelle laden
+    t_df = pd.read_csv(trackers_path, usecols=["tracker", "category", "company_id"])
+    # Tracker normalisieren
+    t_df["tracker"] = t_df["tracker"].astype(str).str.strip()
+    # Kategorie normalisieren
+    t_df["category"] = t_df["category"].astype(str).str.strip()
+    # Company normalisieren
+    t_df["company_id"] = t_df["company_id"].astype(str).str.strip()
+    # Duplikate entfernen
+    t_df = t_df.drop_duplicates(subset=["tracker"], keep="last")
 
-    # JSON-Datei öffnen.
-    with open(output_json_path, "w", encoding="utf-8") as f:
-        # Dict in die JSON schreiben.
-        json.dump(tracker_mapping, f, indent=2, ensure_ascii=False)
+    # Tabellen per Left-Join verknüpfen
+    merged = pd.merge(st_df, t_df, on="tracker", how="left")
 
+    # Mapping-Dictionary vorbereiten
+    mapping = {}
+    # Nach Site gruppieren
+    for site, group in merged.groupby("site"):
+        # Eindeutige Tracker filtern
+        trackers = sorted(list(set(t for t in group["tracker"] if pd.notna(t))))
+        # Eindeutige Kategorien filtern
+        categories = sorted(list(set(c for c in group["category"] if pd.notna(c) and c != "nan")))
+        # Eindeutige Companies filtern
+        companies = sorted(list(set(comp for comp in group["company_id"] if pd.notna(comp) and comp != "nan")))
+        # Werte ins Mapping schreiben
+        mapping[site] = {"trackers": trackers, "categories": categories, "companies": companies}
+        
+    return mapping
 
-# main
+def calc_stats(counts: np.ndarray) -> Dict[str, float]:
+    # Leere Arrays abfangen
+    if len(counts) == 0:
+        return {"mean": 0.0, "std": 0.0, "min": 0.0, "q25": 0.0, "median": 0.0, "q75": 0.0, "iqr": 0.0, "max": 0.0}
+    
+    # Quartile berechnen
+    q25, median, q75 = np.percentile(counts, [25, 50, 75])
+    
+    # Statistik-Dictionary zurückgeben
+    return {
+        "mean": round(float(np.mean(counts)), 4),
+        "std": round(float(np.std(counts, ddof=1)) if len(counts) > 1 else 0.0, 4),
+        "min": round(float(np.min(counts)), 4),
+        "q25": round(float(q25), 4),
+        "median": round(float(median), 4),
+        "q75": round(float(q75), 4),
+        "iqr": round(float(q75 - q25), 4),
+        "max": round(float(np.max(counts)), 4)
+    }
+
+def evaluate_metrics(df: pd.DataFrame) -> Dict[str, Any]:
+    # Zähler als Array extrahieren
+    counts = df["tracker_count"].to_numpy()
+    total = len(counts)
+    
+    # Maske für getrackte Domains
+    mask = counts > 0
+    mapped = counts[mask]
+    
+    # Anzahl getrackter Domains
+    n_mapped = int(np.sum(mask))
+    # Anzahl ungetrackter Domains
+    n_unmapped = int(total - n_mapped)
+    
+    # Prävalenz berechnen
+    prevalence = (n_mapped / total) if total > 0 else 0.0
+    
+    # Report-Struktur bauen
+    return {
+        "sample_overview": {
+            "total_domains_analyzed": int(total),
+            "tracked_domains_count": n_mapped,
+            "untracked_domains_count": n_unmapped,
+            "tracking_prevalence_ratio": round(float(prevalence), 4),
+            "tracking_prevalence_percentage": f"{round(prevalence * 100, 2)}%"
+        },
+        "intensity_all_domains": {
+            "description": "Gesamtverteilung inkl. unmapped (0 Tracker)",
+            "metrics": calc_stats(counts)
+        },
+        "intensity_tracked_only": {
+            "description": "Bedingte Verteilung nur getrackte Domains (> 0)",
+            "metrics": calc_stats(mapped)
+        }
+    }
+
+def run_pipeline(input_file: str, wtm_sites: str, wtm_trackers: str, clean_csv: str, json_path: str, report_path: str, drop_unmapped: bool = False) -> None:
+    """Führt die gesamte Pipeline aus: Laden der Daten, Mapping, Bereinigung und Evaluierung."""
+    # Datensätze prüfen und ggf. automatisch herunterladen/bereitstellen
+    browsing_data()
+    whotracksme_data()
+
+    # Browsing-Daten einlesen
+    df = pd.read_csv(input_file)
+    
+    # WTM-Mapping generieren
+    wtm_map = load_wtm_data(wtm_sites, wtm_trackers)
+    
+    # Domains normalisieren
+    domains = df["domain"].astype(str).str.lower().str.strip()
+    
+    # Tracker mappen
+    df["trackers"] = domains.map(lambda d: wtm_map.get(d, {}).get("trackers", []))
+    # Kategorien mappen
+    df["categories"] = domains.map(lambda d: wtm_map.get(d, {}).get("categories", []))
+    # Companies mappen
+    df["companies"] = domains.map(lambda d: wtm_map.get(d, {}).get("companies", []))
+
+    # Domain-Duplikate entfernen
+    df = df.drop_duplicates(subset=["domain"], keep="last").copy()
+    
+    # Tracker-Anzahl bestimmen
+    df["tracker_count"] = df["trackers"].apply(len)
+
+    # Unmapped filtern falls aktiv
+    if drop_unmapped:
+        df = df[df["tracker_count"] > 0].copy()
+
+    # Ausgabeverzeichnisse erstellen
+    for p in [clean_csv, json_path, report_path]:
+        Path(p).parent.mkdir(parents=True, exist_ok=True)
+
+    # Bereinigte CSV speichern
+    df.to_csv(clean_csv, index=False, encoding="utf-8")
+
+    # JSON-Mapping speichern
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(dict(zip(df["domain"], df["trackers"])), f, indent=2, ensure_ascii=False)
+
+    # Evaluationsreport generieren
+    report = evaluate_metrics(df)
+    # Metadaten ergänzen
+    report["metadata"] = {
+        "input_file": input_file,
+        "drop_unmapped_applied": drop_unmapped
+    }
+    
+    # Report als JSON speichern
+    with open(report_path, "w", encoding="utf-8") as f:
+        json.dump(report, f, indent=2, ensure_ascii=False)
+
 if __name__ == "__main__":
-    run_full_pipeline(
-        input_filepath="Data/datensatz/browsing.csv",
-        output_clean_csv="Data/datensatz/browsing_clean.csv",
-        output_json_path="Data/datensatz/domain_tracker_mapping.json",
-        drop_unmapped=True
+    run_pipeline(
+        input_file="Data/datensatz/browsing.csv",
+        wtm_sites="Data/datensatz/whotracksme/sites_trackers.csv",
+        wtm_trackers="Data/datensatz/whotracksme/trackers.csv",
+        clean_csv="Data/datensatz/browsing_clean.csv",
+        json_path="Data/datensatz/domain_tracker_mapping.json",
+        report_path="Data/datensatz/trackerset_report.json",
+        drop_unmapped=False
     )
