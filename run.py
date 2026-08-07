@@ -6,7 +6,7 @@ from Funktionen import run_sweep
 BASE_DIR = Path(__file__).resolve().parent
 
 DATA_PATH = BASE_DIR / "Data" / "datensatz" / "browsing_clean.csv"
-TRACKER_MAP_PATH = BASE_DIR / "Data" / "datensatz" / "single_tracker_mapping.json"
+TRACKER_MAP_PATH = BASE_DIR / "Data" / "datensatz" / "domain_tracker_mapping.json"
 checkpoint_file = BASE_DIR / "Data" / "datensatz" / "sweep_checkpoint.csv"
 
 if __name__ == "__main__":
@@ -19,14 +19,14 @@ if __name__ == "__main__":
         all_unique_trackers.update(trackers)
     total_vocab_size = len(all_unique_trackers)
 
-    # slot_configs = [5, 10, 15, 20, 25, 35, 40, 45, 50, 55, 60, 65]
-    # domain_configs = [5, 10, 15, 20, 30, 45, 50, 55, 60, 75, 90, 105, 125, 140, 200]
-    # event_configs = [50, 100, 150, 200, 300, 450, 700, 800]
-    # k_values = [1, 3, 5, 10, 20]
-    slot_configs = [35, 40, 45, 50, 55, 60, 65]
-    domain_configs = [20, 30, 45, 50, 55, 60, 75, 90, 105, 125, 140, 200]
-    event_configs = [450, 700, 800]
+    slot_configs = [5, 10, 15, 20, 25, 35, 40, 45, 50, 55, 60, 65]
+    domain_configs = [5, 10, 15, 20, 30, 45, 50, 55, 60, 75, 90, 105, 125, 140, 200]
+    event_configs = [50, 100, 200, 450, 700, 800]
     k_values = [1, 3, 5, 10, 20]
+    # slot_configs = [35, 40, 45, 50, 55, 60, 65]
+    # domain_configs = [20, 30, 45, 50, 55, 60, 75, 90, 105, 125, 140, 200]
+    # event_configs = [450, 700, 800]
+    # k_values = [1, 3, 5, 10, 20]
     # slot_configs = [35]
     # domain_configs = [20]
     # event_configs = [450]
