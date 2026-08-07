@@ -127,9 +127,6 @@ def run_pipeline(input_file: str, wtm_sites: str, wtm_trackers: str, clean_csv: 
     df["categories"] = domains.map(lambda d: wtm_map.get(d, {}).get("categories", []))
     # Companies mappen
     df["companies"] = domains.map(lambda d: wtm_map.get(d, {}).get("companies", []))
-
-    # Domain-Duplikate entfernen
-    df = df.drop_duplicates(subset=["domain"], keep="last").copy()
     
     # Tracker-Anzahl bestimmen
     df["tracker_count"] = df["trackers"].apply(len)
@@ -142,25 +139,59 @@ def run_pipeline(input_file: str, wtm_sites: str, wtm_trackers: str, clean_csv: 
     for p in [clean_csv, json_path, report_path]:
         Path(p).parent.mkdir(parents=True, exist_ok=True)
 
-    # Bereinigte CSV speichern
-    df.to_csv(clean_csv, index=False, encoding="utf-8")
+    # Bereinigte CSV speichern mit nur benötigten Spalten
+    df[["panelist_id", "domain", "used_at"]].to_csv(clean_csv, index=False, encoding="utf-8")
 
     # JSON-Mapping speichern
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(dict(zip(df["domain"], df["trackers"])), f, indent=2, ensure_ascii=False)
 
-    # Evaluationsreport generieren
-    report = evaluate_metrics(df)
-    # Metadaten ergänzen
-    report["metadata"] = {
+    # Event-Level Report generieren
+    event_report = evaluate_metrics(df)
+    
+    # Metadaten für Event-Level hinzufügen
+    event_report["metadata"] = {
+        # Eingabedatei übergeben
         "input_file": input_file,
-        "drop_unmapped_applied": drop_unmapped
+        # Drop-Parameter speichern
+        "drop_unmapped_applied": drop_unmapped,
+        # Level auf event setzen
+        "level": "event",
+        # Beschreibung hinzufügen
+        "description": "Gewichtet nach tatsächlicher Aufrufhäufigkeit"
     }
     
-    # Report als JSON speichern
-    with open(report_path, "w", encoding="utf-8") as f:
-        json.dump(report, f, indent=2, ensure_ascii=False)
+    # Dateipfad für Event-Report anpassen
+    event_report_path = report_path.replace(".json", "_event_level.json")
+    
+    # Event-Report als JSON speichern
+    with open(event_report_path, "w", encoding="utf-8") as f:
+        json.dump(event_report, f, indent=2, ensure_ascii=False)
 
+    # DataFrame auf eindeutige Domains reduzieren für Domain-Level
+    df_domain_level = df[["domain", "tracker_count"]].drop_duplicates(subset=["domain"])
+    
+    # Domain-Level Report generieren
+    domain_report = evaluate_metrics(df_domain_level)
+    
+    # Metadaten für Domain-Level hinzufügen
+    domain_report["metadata"] = {
+        # Eingabedatei übergeben
+        "input_file": input_file,
+        # Drop-Parameter speichern
+        "drop_unmapped_applied": drop_unmapped,
+        # Level auf domain setzen
+        "level": "domain",
+        # Beschreibung hinzufügen
+        "description": "Ungewichtet auf Basis eindeutiger Domains"
+    }
+    # Dateipfad für Domain-Report anpassen
+    domain_report_path = report_path.replace(".json", "_domain_level.json") 
+    # Domain-Report als JSON speichern
+    with open(domain_report_path, "w", encoding="utf-8") as f:
+        json.dump(domain_report, f, indent=2, ensure_ascii=False)
+
+# main
 if __name__ == "__main__":
     run_pipeline(
         input_file="Data/datensatz/browsing.csv",
