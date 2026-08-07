@@ -9,6 +9,9 @@ Inhalt ist die Python-Simulations- und Evaluationspipeline für die Bachelorarbe
 ```text
 ├── Data/                                    # Datensatz und generierte Mapping-Dateien
 │   ├──datensatz                             # Alle relevanten Datensätze
+│   │   ├──whotracksme                       # Join-Datensatz mit allen passenden Trackern
+│   │   │   ├──site_trackers.csv             # Mapping zum Joinen
+│   │   │   ├──trackers.csv                  # Alle Tracker, die verwendet werden
 │   │   ├──browsing.csv                      # Raw Zonedo-Datensatz: https://zenodo.org/records/4757574
 │   │   ├──browsing_clean.csv                # Aufgeräumter Zonedo-Datensatz
 │   │   ├──domain_tracker_mapping.json       # Zurodnung aller Domains zu Trackern basierend auf dem WhoTracks.Me-Datensatz
@@ -22,21 +25,26 @@ Inhalt ist die Python-Simulations- und Evaluationspipeline für die Bachelorarbe
 │   │   ├──kneepoint.csv                     # Ergebnis der Simulation geordnet nach dem Pareto-Optimum (Platz 1 = Utility + Privacy)
 │   │   ├──privacy.csv                       # Ergebnis der Simulation geordnet nach dem Durchschnitt aller k-NN-Werte (Platz 1 = sicherste Kombination)
 ├── Funktionen/                              # Python-Paket der Simulationspipeline
+│   ├── daten/                               # Browsing.csv und WhoTracks.Me Datensatz Download
+│   │   ├── __init__.py                      # init
+│   │   ├── load_dataset.py                  # Download des raw browsing.csv 
+│   │   ├── load_whotracksme.py              # Download des WhoTracks.Me Datensatzes
 │   ├── auswertung/                          # Vokabular, Baseline-Matrix, k-NN-Evaluation und Scoring
-│   ├── pseudonym/                           # Lifecycle, HMAC-Zuweisung und Nutzersimulation
 │   │   ├── __init__.py                      # init
 │   │   ├── evaluation.py                    # Kosinus-Ähnlichkeit, k-NN-Accuracy und Utility-Berechnung
 │   │   ├── scoring.py                       # Min-Max-Normalisierung, Kniepunkt und Epsilon-Plateau
 │   │   ├── sweep.py                         # Parameter-Sweep
 │   │   └── vocabulary.py                    # Aufbau des Tracker-Vokabulars und der Baseline-Matrix
+│   ├── pseudonym/                           # Lifecycle, HMAC-Zuweisung und Nutzersimulation
 │   │   ├── __init__.py                      # init
 │   │   ├── lifecycle.py                     # SlotState-Container und Lifecycle
 │   │   ├── simulation.py                    # UserSimulation
 │   │   └── zuweisung.py                     # SlotAssigner
 │   ├── config.py                            # Datencontainer
 │   └── utils.py                             # Logging-Funktion
-├── tracker.py                               # Vorverarbeitung des browsing.csv Datensatzes (join mit WhoTracks.Me-Datensatz)
+├── tracker.py                               # Download, Vorverarbeitung und Auswertung beider Datensätze
 ├── run.py                                   # Hauptskript
+├── load_whotracksme.py                      # Läd den WhoTracks.Me-Datensatz in den Ordern Data/datensatz/whotracksme
 ├── requirements.txt                         # Projekt-Abhängigkeiten
 └── README.md                                # Projektdokumentation
 ```
@@ -52,31 +60,36 @@ Installiere die benötigten Abhängigkeiten im Root-Verzeichnis des Projekts:
 pip install -r requirements.txt
 ```
 
-### Datensatz herunterladen
-Als empirische Grundlage dient der Zenodo-Datensatz „A web tracking data set of online browsing behavior of 2,148 users“.
+## Datensätze
 
-1. Lade den Datensatz von Zenodo herunter: https://zenodo.org/records/4757574/files/web_tracking_data.tar.gz?download=1
-2. Navigiere zu raw und Platziere die Datei browsing.csv direkt in den Ordner Data/datensatz/:
-   ```text
-   Data/datensatz/browsing.csv
-   ```
+* **Clickstream-Daten:** Der Zenodo-Datensatz „A web tracking data set of online browsing behavior of 2,148 users“ bildet das reale Surfverhalten der Nutzer ab.
+
+* **Tracker-Datenbank:** Die **WhoTracks.Me**-Datenbank dient dem Mapping von Domain auf Tracker.
+
+---
+
+## Vorverarbeitung
+
+Die rohen Clickstream-Daten habeb keine Zuordnung zwischen den aufgerufenen Domains und benötigt deshalb eine Vorverarbeitung.
+
+* **Filterung technischer Dienste:** WhoTracks.Me erfasst neben Tracking-Diensten auch allgemeine Web-Infrastruktur. Um dies zu zu filtern, werden folgende Dienste entfernt:
+  * `cdn`, `hosting`, `customer_interaction`, `audio_video_player`, `extensions`
+* **Bereinigung ungemappter Domains:** Es besteht die Möglichkeit ungemappte Domains zu entfernen, dies wird aber für die Simulation NICHt gemacht. Die Folge ist dass diese Domains keine Tracker-Zurodnung haben.
+* **Daten-Download:** Fehlende Rohdaten wie die browsing.csv oder WhoTracks.Me-Tabellen werden beim Skriptaufruf automatisch geladen und bereitgestellt. Falls diese schon exisiteren werden die nicht erneut geladen.
 
 ---
 
 ## Ausführung der Pipeline
 
-### Vorverarbeitung der Daten und Erstellung des Tracker-Mappings
-Bevor die Simulation startet, müssen die Clickstream-Daten bereinigt und über die WhoTracks.Me-Datenbank den jeweiligen Trackern zugeordnet werden. Dies ist notwendig, da der Datensatz keine Domain auf Tracker Zuordnung hat:
+### Daten laden und Mapping erstellen
+Vor dem Ausführen der eigentlichen Simulation muss das Tracker-Mapping erstellt und der Datensatz bereinigt werden:
 
 ```bash
 python tracker.py
 ```
 
-*Dieser Schritt generiert automatisch die Dateien Data/browsing_clean.csv und Data/domain_tracker_mapping.json.* 
-
-
 ### Evaluation starten
-Nun kann die Simulation gestartet werden:
+
 
 ```bash
 python run.py
@@ -155,7 +168,7 @@ $$\text{UtilityScore} = 0.5 \cdot X_{\text{norm}}(\text{AvgUtility}) + 0.5 \cdot
 
 Das Pareto-Optimum wird die Sekante gesucht zwischen den beiden Extrempunkten ($P_1$ für max.Utility, $P_2$ für max. Datenschutz). Der senkrechte Abstand zu Geraden berchnet sich wie folgt:
 
-$$d_{\text{chord}}(P) = \frac{|(p_2 - p_1)u_0 - (u_2 - u_1)p_0 + u_2 p_1 - p_2 u_1|}{\sqrt{(p_2 - p_1)^2 + (u_2 - u_1)^2}}$$
+$$d_{\text{chord}}(P) = \frac{(p_2 - p_1)u_0 - (u_2 - u_1)p_0 + u_2 p_1 - p_2 u_1}{\sqrt{(p_2 - p_1)^2 + (u_2 - u_1)^2}}$$
 
 Der Kneepoint ($P_{\text{knee}}$) ist die Konfiguration, die diesen Abstand maximiert:
 
