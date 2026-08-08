@@ -8,25 +8,28 @@ Inhalt ist die Python-Simulations- und Evaluationspipeline für die Bachelorarbe
 
 ```text
 ├── Data/                                    # Datensatz und generierte Mapping-Dateien
-│   ├──datensatz                             # Alle relevanten Datensätze
-│   │   ├──whotracksme                       # Join-Datensatz mit allen passenden Trackern
-│   │   │   ├──site_trackers.csv             # Mapping zum Joinen
-│   │   │   ├──trackers.csv                  # Alle Tracker, die verwendet werden
-│   │   ├──browsing.csv                      # Raw Zonedo-Datensatz: https://zenodo.org/records/4757574
-│   │   ├──browsing_clean.csv                # Aufgeräumter Zonedo-Datensatz
-│   │   ├──domain_tracker_mapping.json       # Zurodnung aller Domains zu Trackern basierend auf dem WhoTracks.Me-Datensatz
-│   │   ├──single_tracker_mapping.json       # Zurodnung aller Domains zu einem globalen Tracker
-│   │   ├──sweep_checkpoint.csv              # Checkpoint falls die Simulation abstürtzt (Ergebnis geladen mit einem globalen Tracker)
-│   │   ├──sweep_checkpoint_tracker.csv      # Checkpoint falls die Simulation abstürtzt (Ergebnis geladen mit den gejointen Trackern)
-│   ├──ergebnisse_global_tracker             # Ergebnisse mit einem globalen Tracker
-│   │   ├──kneepoint.csv                     # Ergebnis der Simulation geordnet nach dem Pareto-Optimum (Platz 1 = Utility + Privacy)
-│   │   ├──privacy.csv                       # Ergebnis der Simulation geordnet nach dem Pareto-Optimum (Platz 1 = Utility + Privacy)
-│   ├──ergebnisse_tracker                    # Ergebnisse der gejointen Tracker mit dem WhoTracks.Me-Datensatz
-│   │   ├──kneepoint.csv                     # Ergebnis der Simulation geordnet nach dem Pareto-Optimum (Platz 1 = Utility + Privacy)
-│   │   ├──privacy.csv                       # Ergebnis der Simulation geordnet nach dem Durchschnitt aller k-NN-Werte (Platz 1 = sicherste Kombination)
+│   ├── datensatz                            # Alle relevanten Datensätze
+│   │   ├── whotracksme                      # Join-Datensatz mit allen passenden Trackern
+│   │   │   ├── sites_trackers.csv           # Mapping zum Joinen
+│   │   │   ├── trackers.csv                 # Alle Tracker, die verwendet werden
+│   │   ├── browsing.csv                     # Raw Zenodo-Datensatz: https://zenodo.org/records/4757574
+│   │   ├── browsing_clean.csv               # Aufgeräumter Zenodo-Datensatz
+│   │   ├── datensatz_check.json             # Übersicht über Datensatz-Tracker-Mapping
+│   │   ├── domain_tracker_mapping.json      # Zurodnung aller Domains zu Trackern basierend auf dem WhoTracks.Me-Datensatz
+│   │   ├── single_tracker_mapping.json      # Zurodnung aller Domains zu einem globalen Tracker
+│   │   ├── sweep_checkpoint.csv             # Checkpoint falls die Simulation abstürtzt (Ergebnis geladen mit einem globalen Tracker)
+│   │   ├── sweep_checkpoint_tracker.csv     # Checkpoint falls die Simulation abstürtzt (Ergebnis geladen mit den gejointen Trackern)
+│   │   ├── tranco_2019-02-18.txt            # Tranco-Liste
+│   ├── ergebnisse_global_tracker            # Ergebnisse mit einem globalen Tracker
+│   │   ├── kneepoint.csv                    # Ergebnis der Simulation geordnet nach dem Pareto-Optimum (Platz 1 = Utility + Privacy)
+│   │   ├── privacy.csv                      # Ergebnis der Simulation geordnet nach dem Pareto-Optimum (Platz 1 = Utility + Privacy)
+│   ├── ergebnisse_tracker                   # Ergebnisse der gejointen Tracker mit dem WhoTracks.Me-Datensatz
+│   │   ├── kneepoint.csv                    # Ergebnis der Simulation geordnet nach dem Pareto-Optimum (Platz 1 = Utility + Privacy)
+│   │   ├── privacy.csv                      # Ergebnis der Simulation geordnet nach dem Durchschnitt aller k-NN-Werte (Platz 1 = sicherste Kombination)
 ├── Funktionen/                              # Python-Paket der Simulationspipeline
 │   ├── daten/                               # Browsing.csv und WhoTracks.Me Datensatz Download
 │   │   ├── __init__.py                      # init
+│   │   ├── datset_check                     # Wertet Datensatz join mit WhoTracks.Me aus
 │   │   ├── load_dataset.py                  # Download des raw browsing.csv 
 │   │   ├── load_whotracksme.py              # Download des WhoTracks.Me Datensatzes
 │   ├── auswertung/                          # Vokabular, Baseline-Matrix, k-NN-Evaluation und Scoring
@@ -70,11 +73,11 @@ pip install -r requirements.txt
 
 ## Vorverarbeitung
 
-Die rohen Clickstream-Daten habeb keine Zuordnung zwischen den aufgerufenen Domains und benötigt deshalb eine Vorverarbeitung.
+Die rohen Clickstream-Daten haben keine Zuordnung zwischen den aufgerufenen Domains und benötigt deshalb eine Vorverarbeitung.
 
-* **Filterung technischer Dienste:** WhoTracks.Me erfasst neben Tracking-Diensten auch allgemeine Web-Infrastruktur. Um dies zu zu filtern, werden folgende Dienste entfernt:
+* **Filterung technischer Dienste:** WhoTracks.Me erfasst neben Tracking-Diensten auch allgemeine Web-Infrastruktur. Um dies zu filtern, werden folgende Dienste entfernt:
   * `cdn`, `hosting`, `customer_interaction`, `audio_video_player`, `extensions`
-* **Bereinigung ungemappter Domains:** Es besteht die Möglichkeit ungemappte Domains zu entfernen, dies wird aber für die Simulation NICHt gemacht. Die Folge ist dass diese Domains keine Tracker-Zurodnung haben.
+* **Bereinigung ungemappter Domains:** Es besteht die Möglichkeit ungemappte Domains zu entfernen, dies wird aber für die Simulation NICHT gemacht. Die Folge ist dass diese Domains keine Tracker-Zurodnung haben.
 * **Daten-Download:** Fehlende Rohdaten wie die browsing.csv oder WhoTracks.Me-Tabellen werden beim Skriptaufruf automatisch geladen und bereitgestellt. Falls diese schon exisiteren werden die nicht erneut geladen.
 
 ---
@@ -96,7 +99,7 @@ python run.py
 ```
 
 * Das Skript verarbeitet die Nutzer parallel über alle CPU-Kerne mit use_parallel=True. Falls dies nicht passieren soll im run.py auf False setzen.
-* Der Fortschritt wird in Data/datensatz/sweep_checkpoint.csv gespeichert um nach Fehlern oder einem Crash wieder erneut einsteigen zu können. Dort werden dann Erstmalige Ergebnisse und druchläufe gespeichert.
+* Der Fortschritt wird in Data/datensatz/sweep_checkpoint.csv gespeichert um nach Fehlern oder einem Crash wieder erneut einsteigen zu können. Dort werden dann Erstmalige Ergebnisse und durchläufe gespeichert.
 * Finales Ergebnis wird gespeichert unter: Data/ergebnisse/kneepoint.csv (Komplette Pareto-Optimum Evaluation Nutzen + Privacy) Data/ergebnisse/privacy.csv (Privacy sortiertes Ergebnis mit den sichersten Kombinationen).
 
 ---
@@ -104,7 +107,7 @@ python run.py
 ## Architektur
 
 ### Slot-Zuweisung und Lifecycle
-Die Zuweisung der First-Party-Domänen $D_{\text{FP}}$ erfolgt deterministisch in N verschiedene parallele Slots mittels eines HMAC-SHA256-Verfahrens:
+Die Zuweisung der First-Party-Domains $D_{\text{FP}}$ erfolgt deterministisch in N verschiedene parallele Slots mittels eines HMAC-SHA256-Verfahrens:
 
 $$k = \text{HMAC}(\text{LocalSecret}, D_{\text{FP}})$$
 
@@ -114,7 +117,7 @@ Zur realistischen Abbildung des Surfverhaltens unterscheidet der Algorithmus zwi
 * **Pseudonym-Rotation als rotation_threshold:** Bei Erreichen der Schwellenwerte erfolgt zusätzlich die Löschung des internen Speicherzustands sowie die Freigabe des Slots mit release_slot.
 
 ### Angreifermodell und Pareto-Optimierung
-Die Evaluierung zwischen Privatsphäre-Schutz und Systemnutzen erfolgt über einen Parameter-Sweep bezüglich der Slot-Anzahl ($N$), der Domänen max_domains und der Events max_events. Jede Konfiguration durchläuft die Pseudonym-Rotation und wird über Einzelmetriken bewertet:
+Die Evaluierung zwischen Privatsphäre-Schutz und Systemnutzen erfolgt über einen Parameter-Sweep bezüglich der Slot-Anzahl ($N$), der Domains max_domains und der Events max_events. Jede Konfiguration durchläuft die Pseudonym-Rotation und wird über Einzelmetriken bewertet:
 
 **Re-Identifikationsrisiko ($k$-NN-Angreifer):** Jedes Segment wird als $L_2$-normierter Vektor abgebildet und über eine vektorisierte k-NN-Klassifikation ($k \in \{1, 3, 5, 10, 20\}$) gegen die ungeschützte Baseline-Matrix aller 2.148 Nutzer getestet. Daraus wird der durchschnittliche `Privacy_Score_Avg` gebildet:
 
@@ -176,7 +179,7 @@ $$P_{\text{knee}} = \arg\max_{P \in \mathcal{P}} d_{\text{chord}}(P)$$
 
 **Epsilon-Plateau**
 
-Minimale Abweichunen sorgen zu keiner Verschlechterung des Systems, deshalb wird ein Toleranz-Plateu mit $\varepsilon = 0{,}005$ Abweichung definiert. Eine Konfiguration gehört zu Plateu wenn der Wert nicht mehr als diese Toleranz abweicht.
+Minimale Abweichungen sorgen zu keiner Verschlechterung des Systems, deshalb wird ein Toleranz-Plateau mit $\varepsilon = 0{,}005$ Abweichung definiert. Eine Konfiguration gehört zu Plateau wenn der Wert nicht mehr als diese Toleranz abweicht.
 
 ---
 
