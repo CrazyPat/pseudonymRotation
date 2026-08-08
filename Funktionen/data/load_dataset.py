@@ -1,6 +1,9 @@
+"""Lädt den Web-Tracking-Datensatz von Zenodo herunter und speichert ihn in Data/datensatz/"""
+
 from pathlib import Path
 import tarfile
 import requests
+
 
 def browsing_data() -> None:
     # Ausgabeverzeichnis absolut festlegen

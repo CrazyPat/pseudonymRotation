@@ -7,7 +7,8 @@ from .utils import log_status
 
 from .data import (
     browsing_data,
-    whotracksme_data
+    whotracksme_data,
+    dataset_check,
 )
 
 from .pseudonym import (
@@ -32,6 +33,7 @@ from .auswertung import (
 __all__ = [
     "browsing_data",
     "whotracksme_data",
+    "dataset_check",
     "PipelineConfig",
     "log_status",
     "LifecycleState",

@@ -1,8 +1,12 @@
+"""Lädt die WhoTracks.Me-Daten herunter und speichert sie in Data/datensatz/whotracksme/"""
+
 from pathlib import Path
 import pandas as pd
-from whotracksme.data.loader import DataSource
+
 
 def whotracksme_data() -> None:
+    # In der def weil sonst dauerhafte infos in der Simulation geladen werden.
+    from whotracksme.data.loader import DataSource
     # Iteritems für Series patchen
     pd.Series.iteritems = getattr(pd.Series, 'iteritems', pd.Series.items)
     # Iteritems für DataFrame patchen
