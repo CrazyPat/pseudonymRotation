@@ -34,11 +34,6 @@ class SlotState:
     first_event_time: pd.Timestamp | None = None
     last_event_time: pd.Timestamp | None = None
 
-    # Counter für Domainhäufigkeit.
-    # DEBUG erstmal weg
-    # domain_counter: Counter = field(default_factory=Counter)
-
-
     # Counter für Datenmenge in einem Pseudonym = Segment (Von Rotation zu Rotation)
     segment_index: int = 0
     # Count für Resets eines Slots
@@ -101,5 +96,4 @@ def clear_slot_for_new_segment(slot: SlotState) -> None:
     slot.warm_reached_at = None
     # Segment erhöhen.
     slot.segment_index += 1
-    slot.reset_count += 1
     slot.current_state = LifecycleState.FRESH
