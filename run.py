@@ -13,7 +13,8 @@ if __name__ == "__main__":
     df_raw = pd.read_csv(DATA_PATH)
     with open(TRACKER_MAP_PATH, "r", encoding="utf-8") as f:
         tracker_mapping = json.load(f)
-
+        
+    # Vocab Size wird überschrieben --> sonst 500!
     all_unique_trackers = set()
     for trackers in tracker_mapping.values():
         all_unique_trackers.update(trackers)
