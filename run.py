@@ -22,9 +22,9 @@ if __name__ == "__main__":
 
     slot_configs = [10, 35, 50, 80, 100, 150] 
     domain_configs = [10, 50, 100]
-    event_configs = [50, 200, 450, 700]
+    event_configs = [200, 450, 700]
     day_configs = [7, 20]
-    timeout_configs = [30, 60, 120]
+    timeout_configs = [30, 60]
     k_values = [1, 3, 5, 10, 20]
     # slot_configs = [35, 40, 45, 50, 55, 60, 65]
     # domain_configs = [20, 30, 45, 50, 55, 60, 75, 90, 105, 125, 140, 200]
