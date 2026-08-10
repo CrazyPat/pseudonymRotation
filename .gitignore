@@ -9,3 +9,8 @@ daten_mapping.py
 trackerOLD.py
 Data/datensatz/whotracksme/
 tests
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
