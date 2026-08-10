@@ -17,7 +17,7 @@ from .vocabulary import build_baseline_matrix, build_domain_vocabulary
 def run_sweep(
     df_raw: pd.DataFrame, tracker_mapping: dict,
     slot_configs: list, domain_configs: list, event_configs: list,
-    num_eval_users: int = 2148, vocab_size: int = 500,
+    num_eval_users: int = 2148, vocab_size: int = 500, # Größe der genutzen Tracker-Menge wird aber im Run auf alle gesetzt
     use_parallel: bool = True, verbose: bool = False,
     k_values: list = [1, 3, 5, 10],
     checkpoint_file: str = "sweep_checkpoint.csv",
@@ -28,7 +28,7 @@ def run_sweep(
     df_clean["used_at"] = pd.to_datetime(df_clean["used_at"], errors="coerce")
     df_clean = df_clean.dropna(subset=["used_at", "domain", "panelist_id"])
     df_clean = df_clean.sort_values(["panelist_id", "used_at"]).reset_index(drop=True)
-    # Baut die Vokabular.
+    # Baut das Vokabular.
     domain_to_idx = build_domain_vocabulary(df_clean, tracker_mapping, vocab_size)
     # Baut Baseline-Matrix und Nutzerliste.
     baseline_matrix, user_list = build_baseline_matrix(df_clean, tracker_mapping, domain_to_idx)
