@@ -12,9 +12,13 @@ tests
 
 
 __pycache__
+__pycache__/
 Funktionen/__pycache__
+Funktionen/__pycache__/
 Funktionen/pseudonym/__pycache__
 Funktionen/auswertung/__pycache__
+Funktionen/pseudonym/__pycache__/
+Funktionen/auswertung/__pycache__/
 __pycache__/
 *.pyc
 *.pyo
