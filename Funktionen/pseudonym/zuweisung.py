@@ -33,6 +33,7 @@ class SlotAssigner:
     @staticmethod
     def gen_local_secret(user_id: str) -> bytes:
         """Erezugt ein Locales-Secret für HMAC basierend auf der User-ID"""
+        # Hier gerade noch basierend auf der User-id weil es für die Simulation notwendig ist reproduzierbar zu sein! In einer extension wäre das random und auch nichts bekanntes
         return hashlib.sha256(f"pseudonym-rotation:{user_id}".encode("utf-8")).digest()
 
 
