@@ -17,8 +17,7 @@ Inhalt ist die Python-Simulations- und Evaluationspipeline für die Bachelorarbe
 │   │   ├── datensatz_check.json             # Übersicht über Datensatz-Tracker-Mapping
 │   │   ├── domain_tracker_mapping.json      # Zurodnung aller Domains zu Trackern basierend auf dem WhoTracks.Me-Datensatz
 │   │   ├── single_tracker_mapping.json      # Zurodnung aller Domains zu einem globalen Tracker
-│   │   ├── sweep_checkpoint.csv             # Checkpoint falls die Simulation abstürtzt (Ergebnis geladen mit einem globalen Tracker)
-│   │   ├── sweep_checkpoint_tracker.csv     # Checkpoint falls die Simulation abstürtzt (Ergebnis geladen mit den gejointen Trackern)
+│   │   ├── sweep_checkpoint.csv             # Checkpoint falls die Simulation abstürtzt
 │   │   ├── tranco_2019-02-18.txt            # Tranco-Liste
 │   ├── ergebnisse_global_tracker            # Ergebnisse mit einem globalen Tracker
 │   │   ├── kneepoint.csv                    # Ergebnis der Simulation geordnet nach dem Pareto-Optimum (Platz 1 = Utility + Privacy)
