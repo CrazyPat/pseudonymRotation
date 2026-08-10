@@ -5,9 +5,7 @@ Lifecycle der Pseudonym-Rotation.
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import timedelta
-
 import pandas as pd
-
 from ..config import PipelineConfig
 from enum import Enum
 
@@ -25,17 +23,22 @@ class LifecycleState(Enum):
 @dataclass
 class SlotState:
     # Meint alle Events, damit auch Domains.
-    events_count: int = 0
+    page_visits: int = 0
     # Alle Tracker auf einer Seite.
-    third_party_events_count: int = 0
+    tracker_events: int = 0
     # Eindeutige Domains als Set mit field.
     unique_domains: set = field(default_factory=set)
+    # Eindeutige Tracker als Set mit field.
+    tracker_counter: Counter = field(default_factory=Counter)
     #Zeitstempel speichern, damit das erste und letzte Event (Als pd Timestamp oder none)
     first_event_time: pd.Timestamp | None = None
     last_event_time: pd.Timestamp | None = None
 
     # Counter für Domainhäufigkeit.
-    domain_counter: Counter = field(default_factory=Counter)
+    # DEBUG erstmal weg
+    # domain_counter: Counter = field(default_factory=Counter)
+
+
     # Counter für Datenmenge in einem Pseudonym = Segment (Von Rotation zu Rotation)
     segment_index: int = 0
     # Count für Resets eines Slots
@@ -50,18 +53,18 @@ class SlotState:
 def update_lifecycle_on_event(slot: SlotState, cfg: PipelineConfig, timestamp: pd.Timestamp) -> None:
     """Prüft nach einem Event ob eine Zustandänderung notwendig ist."""
     # FRESH -> ACTIVE
-    if slot.current_state == LifecycleState.FRESH and (slot.events_count > 0 or len(slot.unique_domains) > 0):
+    if slot.current_state == LifecycleState.FRESH and len(slot.unique_domains) > 0:
         # Slot auf Acitve setzen wenn Bedinung erfüllt ist und mindestens 1 Event vorhanden ist.
         slot.current_state = LifecycleState.ACTIVE
 
     # WARM-Threshold berechnen (Threshold wird in der ..config.py --> pipeline_config definiert)
-    warm_event_threshold = cfg.max_events * cfg.warm_threshold_ratio
+    warm_tracker_threshold = cfg.max_events * cfg.warm_threshold_ratio
     warm_domain_threshold = cfg.max_domains * cfg.warm_threshold_ratio
 
     # ACTIVE -> WARM
     if slot.current_state == LifecycleState.ACTIVE and not slot.warm_logged:
         # Wenn der Theshold erreicht ist wird:
-        if slot.events_count >= warm_event_threshold or len(slot.unique_domains) >= warm_domain_threshold:
+        if slot.tracker_events >= warm_tracker_threshold or len(slot.unique_domains) >= warm_domain_threshold:
             # der Slot auf WARM gesetzt.
             slot.current_state = LifecycleState.WARM
             # der Slot auf WARM gelogged.
@@ -73,9 +76,13 @@ def update_lifecycle_on_event(slot: SlotState, cfg: PipelineConfig, timestamp: p
 def threshold_reached(slot: SlotState, cfg: PipelineConfig, current_time: pd.Timestamp) -> bool:
     """Rotations-Schwellenwert-Prüfung für einen Slot."""
     # Setzt die Schwellenwerte für Events und Domains aus der Config. Wenn erreicht dann True
-    if slot.events_count >= cfg.max_events or len(slot.unique_domains) >= cfg.max_domains:
+    # Schwellenwert Tracker.
+    if slot.tracker_events >= cfg.max_events:
         return True
-    # Wemm der Zeitstempel des ersten Events die maximale Zeitdauer überschreitet, dann Treue (Wird auch in der config gesetzt)
+    # Schwellenwert Domains.
+    if len(slot.unique_domains) >= cfg.max_domains:
+        return True
+    # Schwellenwert Days.
     if slot.first_event_time is not None and (current_time - slot.first_event_time) >= timedelta(days=cfg.max_days):
         return True
     # Sonst noch kein Schwellenwert erreicht.
@@ -84,12 +91,12 @@ def threshold_reached(slot: SlotState, cfg: PipelineConfig, current_time: pd.Tim
 
 def clear_slot_for_new_segment(slot: SlotState) -> None:
     """Setzt die Zähler bzw. Daten eines Slots zurück. Zustand --> FRESH."""
-    slot.events_count = 0
-    slot.third_party_events_count = 0
+    slot.page_visits = 0
+    slot.tracker_events = 0
     slot.unique_domains.clear()
     slot.first_event_time = None
     slot.last_event_time = None
-    slot.domain_counter = Counter()
+    slot.tracker_counter = Counter()
     slot.warm_logged = False
     slot.warm_reached_at = None
     # Segment erhöhen.

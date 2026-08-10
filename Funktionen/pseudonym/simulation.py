@@ -35,16 +35,18 @@ class UserSimulation:
         # Seedgenerator für die Slot-Zuweisung. Jeder Nutzer bekommt sein eigenes Secret.
         seed_str = hashlib.sha256(str(user_id).encode("utf-8")).hexdigest()
         self.rng = np.random.default_rng(int(seed_str[:8], 16))
-        self.user_secret = seed_str[8:24]
+
+        # self.user_secret = seed_str[8:24] --> OLD
+        local_secret = SlotAssigner.gen_local_secret(user_id)
         # Zuweisungslogik aus zuweisung.py
-        self.assigner = SlotAssigner(user_id=user_id, cfg=cfg, rng=self.rng)
+        self.assigner = SlotAssigner(user_id=user_id, cfg=cfg, rng=self.rng, local_secret=local_secret)
 
 
     def _close_slot_segment(self, slot_id: int, reason: str, close_time: pd.Timestamp) -> None:
         """Datensammlung nach Abschluss eines Segments."""
         slot = self.slots[slot_id]
         # Wird abgebrochen falls ein Segment keine Events hatte.
-        if slot.events_count <= 0:
+        if slot.page_visits <= 0:
             return
         # Setzt das Pseudonym auf SATURATED.
         if reason == "rotation_threshold":
@@ -57,11 +59,11 @@ class UserSimulation:
             "segment_id": slot.segment_index,
             "start_time": slot.first_event_time,
             "end_time": close_time,
-            "events_count": slot.events_count,
-            "third_party_events": slot.third_party_events_count,
+            "page_visits": slot.page_visits,
+            "tracker_events": slot.tracker_events,
             "unique_domains": len(slot.unique_domains),
             "trigger": reason,
-            "domain_counter_json": json.dumps(slot.domain_counter, ensure_ascii=False),
+            "tracker_counter_json": json.dumps(slot.tracker_counter, ensure_ascii=False),
             "final_state": slot.current_state.name
         })
         # Leert alle Zähler + Slot --> FRESH, weil neues Segment beginnt. Slots bleiben dabei gleich!
@@ -69,6 +71,7 @@ class UserSimulation:
 
         # Löscht einen kompletten Slot. Dies aber nur wenn ein Schwellenwert erreicht wurde.
         if reason == "rotation_threshold":
+            slot.reset_count += 1
             self.assigner.release_slot(slot_id)
 
 
@@ -90,16 +93,14 @@ class UserSimulation:
         # Zeitstempel setzen beim ersten Event.
         if slot.first_event_time is None:
             slot.first_event_time = timestamp
-        # Zähler erhöhen für Events.
-        slot.events_count += 1
+        # Zähler erhöhen für ALLE.
+        slot.page_visits += 1
         # Domain wird in Set gespeichert für eindeutige Domains.
         slot.unique_domains.add(domain)
-        # Nimmt Tracker aus dem Mapping. Falls leer dann auch leere Liste.
-        associated_trackers = self.tracker_mapping.get(domain, [])
         # Zählt TPT-Events und speichert sie in einem Set für Duplikatsvermeidung.
-        for tp_domain in associated_trackers:
-            slot.third_party_events_count += 1
-            slot.domain_counter[tp_domain] += 1
+        for tracker in self.tracker_mapping.get(domain, []):
+            slot.tracker_events += 1
+            slot.tracker_counter[tracker] += 1
         # Letzter Zeitstempel wird gesetzt, um Inaktivität zu prüfen.
         slot.last_event_time = timestamp
         # Lifecycle-Logik prüft den Zustand des Slots und ob eine Rotation notwendig ist.

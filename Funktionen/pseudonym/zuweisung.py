@@ -15,19 +15,26 @@ from ..config import PipelineConfig
 class SlotAssigner:
     """Verwaltet die Zuordnung (Domain -> Slot) und (Slot -> Domains)."""
 
-    def __init__(self, user_id: str, cfg: PipelineConfig, rng: np.random.Generator):
+    def __init__(self, user_id: str, cfg: PipelineConfig, rng: np.random.Generator, local_secret: bytes,):
         # User_id
         self.user_id = user_id
         # Objekt der Konfiguration
         self.cfg = cfg
         # Random Number
         self.rng = rng
+        # Local Secret für HMAC SHA256
+        self.local_secret = local_secret
         # Leeres Mapping von Domain --> Slot
         self.domain_to_slot_map: Dict[str, int] = {}
-        # Leeres Mapping von Slot --> Domains = Baut die Zuordnung auf (z. B. 0: set())
-        self.slot_to_domains: Dict[int, Set[str]] = {i: set() for i in range(cfg.num_slots)}
-        # Generiert Locales Secret für HMAC mit SHA256 mit 32 Bytes
-        self.local_secret = secrets.token_bytes(32)
+        # Leeres Mapping von Slot --> Pseudonyme = Baut die Zuordnung auf (z. B. 0: set())
+        self.slot_to_pseudonym: Dict[int, Set[str]] = {i: set() for i in range(cfg.num_slots)}
+
+
+    @staticmethod
+    def gen_local_secret(user_id: str) -> bytes:
+        """Erezugt ein Locales-Secret für HMAC basierend auf der User-ID"""
+        return hashlib.sha256(f"pseudonym-rotation:{user_id}".encode("utf-8")).digest()
+
 
     def _hash_domain(self, domain: str) -> str:
         """Verschleiert eine Domain mit HMAC SHA256 und einem Localen-Secret"""
@@ -55,16 +62,13 @@ class SlotAssigner:
         # In Mapping eintragen für spätere Prüfung.
         self.domain_to_slot_map[pseudonym] = assigned_slot
         # Für Rotationen eintragen.
-        self.slot_to_domains[assigned_slot].add(pseudonym)
+        self.slot_to_pseudonym[assigned_slot].add(pseudonym)
         return assigned_slot
 
     def release_slot(self, slot_id: int) -> None:
         """Rotation eines Slots"""
-        # Prüft ob Slot existiert.
-        if slot_id not in self.slot_to_domains:
-            return
         # Alle Domains werden aus dem Slot entfernt. Nutzt die vorhin eingetragenen Domains.
-        for pseudonym in self.slot_to_domains[slot_id]:
+        for pseudonym in self.slot_to_pseudonym[slot_id]:
             del self.domain_to_slot_map[pseudonym]
         # Slot wird restlos geleert.
-        self.slot_to_domains[slot_id].clear()
+        self.slot_to_pseudonym[slot_id].clear()

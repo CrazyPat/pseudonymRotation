@@ -83,9 +83,11 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
         # Speichert Nutzer_ID.
         query_A.append(seg["user_id"])
         # Speichert die Anzahl an Third-Party-Events pro Segment.
-        third_party_counts.append(seg["third_party_events"])
+        third_party_counts.append(seg["tracker_events"])
         # Domain-Counter aus dem JSON laden
-        counter_data = json.loads(seg["domain_counter_json"])
+        counter_data = json.loads(seg["tracker_counter_json"])
+
+
         # Befüllt die Listen für das COO-Format mit den aus dem Vokabular gezählten Trackern.
         for dom, count in counter_data.items():
             if dom in domain_to_idx:
