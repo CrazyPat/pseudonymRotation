@@ -160,6 +160,8 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
         "Anzahl_Slots": cfg.num_slots,
         "Max_Domains": cfg.max_domains,
         "Max_Events": cfg.max_events,
+        "Max_Days": cfg.max_days,
+        "Session_Timeout": cfg.session_timeout_minutes,
         "Mean_Cosine_Prev_Pseudonym": mean_cosine,
         "Avg_Utility_ThirdParty": np.mean(third_party_counts),
         "Total_Resets": total_resets,

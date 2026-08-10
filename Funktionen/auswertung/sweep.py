@@ -16,7 +16,7 @@ from .vocabulary import build_baseline_matrix, build_domain_vocabulary
 
 def run_sweep(
     df_raw: pd.DataFrame, tracker_mapping: dict,
-    slot_configs: list, domain_configs: list, event_configs: list,
+    slot_configs: list, domain_configs: list, event_configs: list, day_configs: list, timeout_configs: list,
     num_eval_users: int = 2148, vocab_size: int = 500, # Größe der genutzen Tracker-Menge wird aber im Run auf alle gesetzt
     use_parallel: bool = True, verbose: bool = False,
     k_values: list = [1, 3, 5, 10],
@@ -36,7 +36,7 @@ def run_sweep(
     top_users = df_clean["panelist_id"].value_counts().head(num_eval_users).index
     df_eval = df_clean[df_clean["panelist_id"].isin(top_users)].copy()
     # Läd alle configs.
-    configs = list(itertools.product(slot_configs, domain_configs, event_configs))
+    configs = list(itertools.product(slot_configs, domain_configs, event_configs, day_configs, timeout_configs))
     # Berechnet alle configs für Fortschrittsanzeige.
     total_configs = len(configs)
 
@@ -50,7 +50,7 @@ def run_sweep(
             # Geht durch alle configs.
             for _, row in df_checkpoint.iterrows():
                 # Speichert fertige im Set, falls diese schon durchgelaufen sind.
-                completed_configs.add((int(row["Anzahl_Slots"]), int(row["Max_Domains"]), int(row["Max_Events"])))
+                completed_configs.add((int(row["Anzahl_Slots"]), int(row["Max_Domains"]), int(row["Max_Events"]), int(row.get("Max_Days")), int(row["Session_Timeout"])))
             # Fortschrittsanzeige.
             if verbose:
                 log_status(f"Checkpoint: {len(completed_configs)}", True)
@@ -59,19 +59,19 @@ def run_sweep(
             if verbose:
                 log_status(f"Fehler beim Laden des Checkpoints: {e}", True)
 
-    # Start des Sweeps. Durchläuft alle configs. Damit slots, domains und events.
-    for config_index, (s, d, e) in enumerate(configs, start=1):
+    # Start des Sweeps. Durchläuft alle configs. Damit slots, domains, events und days.
+    for config_index, (s, d, e, day, t) in enumerate(configs, start=1):
         # Kontrolliert ob configs schon fertig sind --> Überspringt falls ja.
-        if (s, d, e) in completed_configs:
+        if (s, d, e, day, t) in completed_configs:
             # Alle fertigen. Fortschrittsanzeige.
             if verbose:
-                log_status(f"Überspringe {config_index}/{total_configs} (Slots={s}, Dom={d}, Ev={e})", True)
+                log_status(f"Überspringe {config_index}/{total_configs} (Slots={s}, Dom={d}, Ev={e}, Days={day}, Timeout={t})", True)
             continue
         # Erstellt pipeline für die config.
-        cfg = PipelineConfig(num_slots=s, max_domains=d, max_events=e)
+        cfg = PipelineConfig(num_slots=s, max_domains=d, max_events=e, max_days=day, session_timeout_minutes=t)
         # Kontrolle wie weit die config durchgelaufen ist.
         if verbose:
-            log_status(f"Starte Konfiguration {config_index}/{total_configs} (Slots={s}, Dom={d}, Ev={e})...", True)
+            log_status(f"Starte Konfiguration {config_index}/{total_configs} (Slots={s}, Dom={d}, Ev={e}, Days={day}, Timeout={t})", True)
         # Evaluierung der config mit parametern. --> dict mit allen Werten (kNN-Accuracy, Cosine Similarity usw).
         res = evaluate_configuration(
             df_eval, cfg, baseline_matrix, user_list, domain_to_idx, tracker_mapping,
