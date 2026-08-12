@@ -11,7 +11,7 @@ from ..config import PipelineConfig
 from ..utils import log_status
 from .evaluation import evaluate_configuration
 from .scoring import add_scores
-from .vocabulary import build_baseline_matrix, build_domain_vocabulary
+from .vocabulary import build_baseline_matrix, build_tracker_vocabulary
 
 
 def run_sweep(
@@ -29,7 +29,7 @@ def run_sweep(
     df_clean = df_clean.dropna(subset=["used_at", "domain", "panelist_id"])
     df_clean = df_clean.sort_values(["panelist_id", "used_at"]).reset_index(drop=True)
     # Baut das Vokabular.
-    domain_to_idx = build_domain_vocabulary(df_clean, tracker_mapping, vocab_size)
+    domain_to_idx = build_tracker_vocabulary(df_clean, tracker_mapping, vocab_size)
     # Baut Baseline-Matrix und Nutzerliste.
     baseline_matrix, user_list = build_baseline_matrix(df_clean, tracker_mapping, domain_to_idx)
     # Wählt nur die Top-Nutzer für die Evaluation basierend auf der Anzahl ihrer Events. Es wird aber ein Vollständiger durchlauf Simuliert (Also alle Nutzer werden genutzt)

@@ -7,14 +7,14 @@ import numpy as np
 import pandas as pd
 
 
-def build_domain_vocabulary(df: pd.DataFrame, tracker_mapping: dict, vocab_size: int) -> dict[str, int]:
-    """Erstellt ein Vokabular der Top-Domains basierend auf der Häufigkeit der Tracker in den Daten."""
+def build_tracker_vocabulary(df: pd.DataFrame, tracker_mapping: dict, vocab_size: int) -> dict[str, int]:
+    """Erstellt ein Vokabular der am Häufigsten vorkommenden Tracker in den Daten."""
     # Es werden alle Tracker aus dem Mapping geladen.
     all_trackers = [tracker for trackers in tracker_mapping.values() for tracker in trackers]
-    # Top-Domains werden nach Häufigkeit der Tracker ausgewählt.
-    top_domains = Counter(all_trackers).most_common(vocab_size)
+    # Top-Tracker werden nach Häufigkeit ausgewählt.
+    top_trackers = Counter(all_trackers).most_common(vocab_size)
     # Umwandlung in ein Dict.
-    return {d[0]: i for i, d in enumerate(top_domains)}
+    return {d[0]: i for i, d in enumerate(top_trackers)}
 
 
 def build_baseline_matrix(df: pd.DataFrame, tracker_mapping: dict, domain_to_idx: dict) -> tuple[np.ndarray, list]:

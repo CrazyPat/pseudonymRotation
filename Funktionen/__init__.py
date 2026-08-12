@@ -20,7 +20,7 @@ from .pseudonym import (
 )
 
 from .auswertung import (
-    build_domain_vocabulary,
+    build_tracker_vocabulary,
     build_baseline_matrix,
     evaluate_configuration,
     minmax,
@@ -41,7 +41,7 @@ __all__ = [
     "SlotAssigner",
     "UserSimulation",
     "simulate_user_chunk",
-    "build_domain_vocabulary",
+    "build_tracker_vocabulary",
     "build_baseline_matrix",
     "evaluate_configuration",
     "minmax",
