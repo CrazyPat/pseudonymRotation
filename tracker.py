@@ -57,6 +57,11 @@ def run_pipeline(input_file: str, wtm_sites: str, wtm_trackers: str, clean_csv: 
 
     # Browsing-Daten einlesen
     df = pd.read_csv(input_file)
+
+    # Datenbereinigung.
+    df["used_at"] = pd.to_datetime(df["used_at"], errors="coerce")
+    df = df.dropna(subset=["panelist_id", "domain", "used_at"])
+    df = df.sort_values(["panelist_id", "used_at"]).reset_index(drop=True)
     
     # WTM-Mapping generieren
     wtm_map = load_wtm_data(wtm_sites, wtm_trackers)
