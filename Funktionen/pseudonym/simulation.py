@@ -14,7 +14,8 @@ from ..utils import log_status
 from .lifecycle import (
     LifecycleState,
     SlotState,
-    clear_slot_for_new_segment,
+    close_segment,
+    reset_pseudonym,
     threshold_reached,
     update_lifecycle_on_event,
 )
@@ -66,12 +67,13 @@ class UserSimulation:
             "tracker_counter_json": json.dumps(slot.tracker_counter, ensure_ascii=False),
             "final_state": slot.current_state.name
         })
-        # Leert alle Zähler + Slot --> FRESH, weil neues Segment beginnt. Slots bleiben dabei gleich!
-        clear_slot_for_new_segment(slot)
+        # Segment wird geschlossen.
+        close_segment(slot)
 
         # Löscht einen kompletten Slot. Dies aber nur wenn ein Schwellenwert erreicht wurde.
         if reason == "rotation_threshold":
             slot.reset_count += 1
+            reset_pseudonym(slot)
             self.assigner.release_slot(slot_id)
 
 
@@ -93,13 +95,19 @@ class UserSimulation:
         # Zeitstempel setzen beim ersten Event.
         if slot.first_event_time is None:
             slot.first_event_time = timestamp
+        # Startzeit für Pseudonym.
+        if slot.pseudonym_start_time is None:
+            slot.pseudonym_start_time = timestamp
         # Zähler erhöhen für ALLE.
         slot.page_visits += 1
         # Domain wird in Set gespeichert für eindeutige Domains.
         slot.unique_domains.add(domain)
+        # Kummulierte Domains auch zählen.
+        slot.cum_unique_domains.add(domain)
         # Zählt TPT-Events und speichert sie in einem Set für Duplikatsvermeidung.
         for tracker in self.tracker_mapping.get(domain, []):
             slot.tracker_events += 1
+            slot.cum_tracker_events += 1
             slot.tracker_counter[tracker] += 1
         # Letzter Zeitstempel wird gesetzt, um Inaktivität zu prüfen.
         slot.last_event_time = timestamp

@@ -30,25 +30,31 @@ class SlotState:
     unique_domains: set = field(default_factory=set)
     # Eindeutige Tracker als Set mit field.
     tracker_counter: Counter = field(default_factory=Counter)
-    #Zeitstempel speichern, damit das erste und letzte Event (Als pd Timestamp oder none)
+    #Zeitstempel speichern, damit das erste und letzte Event (Als pd Timestamp oder none).
     first_event_time: pd.Timestamp | None = None
     last_event_time: pd.Timestamp | None = None
 
-    # Counter für Datenmenge in einem Pseudonym = Segment (Von Rotation zu Rotation)
+    # Counter für Datenmenge in einem Pseudonym = Segment (Von Rotation zu Rotation).
     segment_index: int = 0
-    # Count für Resets eines Slots
+    # Count für Resets eines Slots.
     reset_count: int = 0
-    # Status des Slots
+    # Status des Slots.
     warm_logged: bool = False
     warm_reached_at: pd.Timestamp | None = None
-    # Initialzustand des Slots
+    # Initialzustand des Slots.
     current_state: LifecycleState = LifecycleState.FRESH
+    # kummulierte tracker events.
+    cum_tracker_events: int = 0
+    # kummulierte domains.
+    cum_unique_domains: set = field(default_factory=set)
+    # startzeit des Pseudonyms.
+    pseudonym_start_time: pd.Timestamp | None = None
 
 
 def update_lifecycle_on_event(slot: SlotState, cfg: PipelineConfig, timestamp: pd.Timestamp) -> None:
     """Prüft nach einem Event ob eine Zustandänderung notwendig ist."""
     # FRESH -> ACTIVE
-    if slot.current_state == LifecycleState.FRESH and len(slot.unique_domains) > 0:
+    if slot.current_state == LifecycleState.FRESH and len(slot.cum_unique_domains) > 0:
         # Slot auf Acitve setzen wenn Bedinung erfüllt ist und mindestens 1 Event vorhanden ist.
         slot.current_state = LifecycleState.ACTIVE
 
@@ -59,7 +65,7 @@ def update_lifecycle_on_event(slot: SlotState, cfg: PipelineConfig, timestamp: p
     # ACTIVE -> WARM
     if slot.current_state == LifecycleState.ACTIVE and not slot.warm_logged:
         # Wenn der Theshold erreicht ist wird:
-        if slot.tracker_events >= warm_tracker_threshold or len(slot.unique_domains) >= warm_domain_threshold:
+        if slot.cum_tracker_events >= warm_tracker_threshold or len(slot.cum_unique_domains) >= warm_domain_threshold:
             # der Slot auf WARM gesetzt.
             slot.current_state = LifecycleState.WARM
             # der Slot auf WARM gelogged.
@@ -72,28 +78,33 @@ def threshold_reached(slot: SlotState, cfg: PipelineConfig, current_time: pd.Tim
     """Rotations-Schwellenwert-Prüfung für einen Slot."""
     # Setzt die Schwellenwerte für Events und Domains aus der Config. Wenn erreicht dann True
     # Schwellenwert Tracker.
-    if slot.tracker_events >= cfg.max_events:
+    if slot.cum_tracker_events >= cfg.max_events:
         return True
     # Schwellenwert Domains.
-    if len(slot.unique_domains) >= cfg.max_domains:
+    if len(slot.cum_unique_domains) >= cfg.max_domains:
         return True
     # Schwellenwert Days.
-    if slot.first_event_time is not None and (current_time - slot.first_event_time) >= timedelta(days=cfg.max_days):
+    if slot.pseudonym_start_time is not None and (current_time - slot.pseudonym_start_time) >= timedelta(days=cfg.max_days):
         return True
     # Sonst noch kein Schwellenwert erreicht.
     return False
 
 
-def clear_slot_for_new_segment(slot: SlotState) -> None:
-    """Setzt die Zähler bzw. Daten eines Slots zurück. Zustand --> FRESH."""
+def close_segment(slot: SlotState) -> None:
+    """Session-Grenze für die Auswertung."""
     slot.page_visits = 0
     slot.tracker_events = 0
     slot.unique_domains.clear()
+    slot.tracker_counter = Counter()
     slot.first_event_time = None
     slot.last_event_time = None
-    slot.tracker_counter = Counter()
+    slot.segment_index += 1
+
+def reset_pseudonym(slot: SlotState) -> None:
+    """Löscht den Pseudonym-Zustand --> Kompletter Reset."""
+    slot.cum_tracker_events = 0
+    slot.cum_unique_domains = set()
+    slot.pseudonym_start_time = None
     slot.warm_logged = False
     slot.warm_reached_at = None
-    # Segment erhöhen.
-    slot.segment_index += 1
     slot.current_state = LifecycleState.FRESH

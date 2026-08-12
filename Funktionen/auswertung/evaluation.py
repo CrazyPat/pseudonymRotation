@@ -116,7 +116,7 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
         for i in range(1, num_segments):
             prev = segments_sorted[i - 1]
             curr = segments_sorted[i]
-            if prev["user_id"] == curr["user_id"] and prev["slot_id"] == curr["slot_id"]:
+            if prev["user_id"] == curr["user_id"] and prev["slot_id"] == curr["slot_id"] and prev["trigger"] == "rotation_threshold":
                 cosine_sims.append(float(row_sims[i - 1]))
 
     # k-NN
