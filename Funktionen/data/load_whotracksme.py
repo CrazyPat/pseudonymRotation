@@ -33,5 +33,5 @@ def whotracksme_data() -> None:
             file_path = output_dir / f"{attr}.csv"
             # Als CSV speichern
             df.to_csv(file_path, index=False)
-            # Erfolgsmeldung ausgeben
-            print(f"Exportiert: {attr} -> {file_path} (Zeilen: {len(df)}, Spalten: {list(df.columns)})")
+            # Inhalt:
+            # print(f"Exportiert: {attr} -> {file_path} (Zeilen: {len(df)}, Spalten: {list(df.columns)})")
