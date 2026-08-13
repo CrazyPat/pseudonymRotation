@@ -239,8 +239,8 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
     if verbose:
         ref_k = k_values[0] 
         log_status(
-            f"Config -> Acc (k={ref_k}, Rotation): {result[f'kNN_Accuracy_k{ref_k}_RotationOnly']:.4f} | "
-            f"Acc (k={ref_k}, All): {result[f'kNN_Accuracy_k{ref_k}_AllSegments']:.4f} | "
+            f"Config -> Acc (k={ref_k}, Rotation): {result[f'kNN_Accuracy_k{ref_k}_Rotation']:.4f} | "
+            f"Acc (k={ref_k}, All): {result[f'kNN_Accuracy_k{ref_k}_Segments']:.4f} | "
             f"Cosine: {result['Mean_Cosine_Prev_Pseudonym']:.4f} | Util: {result['Avg_Utility_ThirdParty']:.2f}",
             True,
         )
