@@ -17,6 +17,57 @@ from ..pseudonym.simulation import simulate_user_chunk
 from ..utils import log_status
 
 
+def _score_segments(segments_sorted, domain_to_idx, baseline_matrix, user_list, k_values, verbose=False):
+    """Baut Sparse-Matrix und berechnet kNN-Accuracy für eine gegebene Segment-Liste."""
+    num_segments = len(segments_sorted)
+    # Falls keine Segmente übergeben wurden --> leeres Ergebnis.
+    if num_segments == 0:
+        return {f"kNN_Accuracy_k{k}": 0.0 for k in k_values}, 0
+
+    num_vocab = len(domain_to_idx)
+    # Listen für COO-Format.
+    rows, cols, data = [], [], []
+    query_A = []
+
+    for i, seg in enumerate(segments_sorted):
+        query_A.append(seg["user_id"])
+        counter_data = json.loads(seg["tracker_counter_json"])
+        for dom, count in counter_data.items():
+            if dom in domain_to_idx:
+                rows.append(i)
+                cols.append(domain_to_idx[dom])
+                data.append(float(count))
+
+    # Sparse-Matrix aus COO-Arrays.
+    query_matrix = sp.coo_matrix((data, (rows, cols)), shape=(num_segments, num_vocab)).tocsr()
+    # Norm berechnen und normieren.
+    row_norms = np.sqrt(query_matrix.multiply(query_matrix).sum(axis=1).A1)
+    row_norms[row_norms == 0] = 1.0
+    inv_norms = sp.diags(1.0 / row_norms)
+    query_matrix = inv_norms.dot(query_matrix)
+
+    correct_predictions = {k: 0 for k in k_values}
+    batch_size = 10000
+    max_k = max(k_values)
+    user_array = np.array(user_list)
+    query_users = np.array(query_A)
+
+    # Batchweise kNN-Auswertung wie gehabt.
+    for start_idx in range(0, num_segments, batch_size):
+        end_idx = min(start_idx + batch_size, num_segments)
+        query_batch = query_matrix[start_idx:end_idx]
+        sims = query_batch.dot(baseline_matrix.T)
+        top_indices = np.argsort(sims, axis=1)[:, ::-1][:, :max_k]
+        top_users = user_array[top_indices]
+        true_users = query_users[start_idx:end_idx, None]
+        for k in k_values:
+            matches = (top_users[:, :k] == true_users).any(axis=1)
+            correct_predictions[k] += int(matches.sum())
+
+    acc = {f"kNN_Accuracy_k{k}": correct_predictions[k] / num_segments for k in k_values}
+    return acc, num_segments
+
+
 def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_matrix: np.ndarray, user_list: list, domain_to_idx: dict,
     tracker_mapping: dict, k_values: list, use_parallel: bool = True, verbose: bool = False) -> dict:
     # Gruppiert die Nutzer nach der ID und erstellt eine Liste für die Simulation.
@@ -58,6 +109,8 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
     
     # Segemente werden sortiert nach Nutzer,Slot und Segment_id damit die Reihenfolge für die Kosinus-Ähnlichkeit korrekt ist.
     log_status(f"Total Segmente: {len(all_segments)}.", verbose)
+    # Zählt wie oft welcher Rotations-Grund vorkam zur prüfung wann max_domains greift.
+    trigger_counts = Counter(s["trigger"] for s in all_segments)
     segments_sorted = sorted(all_segments, key=lambda x: (x["user_id"], x["slot_id"], x["segment_id"]))
     
     # Dimensionen für Sparse Matrix definieren
@@ -106,7 +159,6 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
     query_matrix = inv_norms.dot(query_matrix)
 
     log_status("Kosinus-Ähnlichkeit und k-NN Auswertung", verbose)
-    correct_predictions = {k: 0 for k in k_values}
     cosine_sims = []
 
     # Kosinus-Ähnlichkeit aufeinanderfolgender Segmente
@@ -119,41 +171,14 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
             if prev["user_id"] == curr["user_id"] and prev["slot_id"] == curr["slot_id"] and prev["trigger"] == "rotation_threshold":
                 cosine_sims.append(float(row_sims[i - 1]))
 
-    # k-NN
-    batch_size = 10000
-    max_k = max(k_values)
-    
-    # Nutzer-IDs
-    user_array = np.array(user_list)
-    query_users = np.array(query_A)
-
-    for start_idx in range(0, num_segments, batch_size):
-        end_idx = min(start_idx + batch_size, num_segments)
-        
-        if start_idx > 0 and start_idx % 100000 == 0:
-            log_status(f"Auswertung: {start_idx}/{num_segments} Segmente", verbose)
-
-        # Matrixmultiplikation für den Batch
-        query_batch = query_matrix[start_idx:end_idx]
-        sims = query_batch.dot(baseline_matrix.T)
-        
-        # Sortiert alle Zeilen des Batches gleichzeitig und holt nur die Top-max_k Spalten
-        top_indices = np.argsort(sims, axis=1)[:, ::-1][:, :max_k]
-        
-        # Mappt Indizes zu Nutzer-IDs
-        top_users = user_array[top_indices]
-        
-        # Wahre Nutzer für diesen Batch als Spaltenvektor
-        true_users = query_users[start_idx:end_idx, None]
-        
-        # Zählt die Treffer für alle k-Werte vektorisiert
-        for k in k_values:
-            # Ist der Nutzer in den ersten k Spalten des Bachtes?
-            matches = (top_users[:, :k] == true_users).any(axis=1)
-            correct_predictions[k] += int(matches.sum())
-
     log_status("Konfiguration abgeschlossen.", verbose)
-    
+    log_status("Konfiguration abgeschlossen.", verbose)
+
+    # Nur echte Rotationen
+    segments_rotation_only = [s for s in segments_sorted if s["trigger"] == "rotation_threshold"]
+    # Zwei Angreifer einmal alle Segmente und einmal nur nach abgeschlossener Rotation.
+    acc_all, n_all = _score_segments(segments_sorted, domain_to_idx, baseline_matrix, user_list, k_values, verbose)
+    acc_rot, n_rot = _score_segments(segments_rotation_only, domain_to_idx, baseline_matrix, user_list, k_values, verbose)
     # Durchschnitt zwischen den Segmenten. Fallback auf 0 falls keine Segmente.
     mean_cosine = float(np.mean(cosine_sims)) if cosine_sims else 0.0
 
@@ -167,13 +192,17 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
         "Mean_Cosine_Prev_Pseudonym": mean_cosine,
         "Avg_Utility_ThirdParty": np.mean(third_party_counts),
         "Total_Resets": total_resets,
-        "Total_Segments": num_segments
+        "Total_Segments": n_all,
+        "Total_Segments_Rotation": n_rot,
+        "Rotation_Threshold": trigger_counts.get("rotation_threshold", 0) / len(all_segments),
+        "Session_Gap": trigger_counts.get("session_gap", 0) / len(all_segments),
+        "End_Of_Stream": trigger_counts.get("end_of_stream", 0) / len(all_segments),
     }
 
-    # Die Accuracy für jeden k-Wert dynamisch berechnen und dem Dict hinzufügen
+    # Die Accuracy für jeden k-Wert dynamisch berechnen und dem Dict hinzufügen, für beide Bedrohungsmodelle.
     for k in k_values:
-        accuracy = correct_predictions[k] / num_segments if num_segments > 0 else 0.0
-        result[f"kNN_Accuracy_k{k}"] = accuracy
+        result[f"kNN_Accuracy_k{k}_Segments"] = acc_all[f"kNN_Accuracy_k{k}"]
+        result[f"kNN_Accuracy_k{k}_Rotation"] = acc_rot[f"kNN_Accuracy_k{k}"]
 
     # Ausgabe zur Kontrolle
     if verbose:

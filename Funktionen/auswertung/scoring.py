@@ -116,11 +116,22 @@ def add_plateau(df: pd.DataFrame, eps: float = 0.005) -> pd.DataFrame:
     return df
 
 
-def add_scores(
-    df: pd.DataFrame, eps: float = 0.005) -> pd.DataFrame:
-    """
-    Berechnet die kombinierten Privacy- und Utility-Scores.
-    """
+def _privacy_scores(out, linkability_risk, suffix):
+    """Berechnet Privacy-Scores für ein Angreifermodell."""
+    acc_columns = [c for c in out.columns if c.startswith("kNN_Accuracy_k") and c.endswith(suffix)]
+    privacy_cols = []
+    for acc_col in acc_columns:
+        # Suffix rausschneiden um den reinen k-Teil zu bekommen.
+        k_suffix = acc_col.replace("kNN_Accuracy", "").replace(suffix, "")
+        acc_risk = minmax(out[acc_col])
+        col_name = f"Privacy_Score{k_suffix}{suffix}"
+        out[col_name] = 0.5 * (1.0 - acc_risk) + 0.5 * (1.0 - linkability_risk)
+        privacy_cols.append(col_name)
+    return privacy_cols
+
+
+def add_scores(df: pd.DataFrame, eps: float = 0.005) -> pd.DataFrame:
+    """Berechnet die kombinierten Privacy- und Utility-Scores."""
     # Kopie.
     out = df.copy()
 
@@ -133,31 +144,15 @@ def add_scores(
 
     # Verkettungsrisiko normalisieren.
     linkability_risk = minmax(out["Mean_Cosine_Prev_Pseudonym"])
-    # Alle Spalten, welche NN_Accuracy_k am Anfang haben damit alle in der Config angegebene Angriffsbereiche z. B. k1, k10 usw.
-    acc_columns = [
-        col for col in out.columns if col.startswith("kNN_Accuracy_k")
-    ]
-    privacy_cols = []
-    for acc_col in acc_columns:
-        # Erkennt welcher Suffix verwendet wurde z. B. 1 oder 10.
-        k_suffix = acc_col.replace("kNN_Accuracy", "")
-        # Normalisiert die Trefferquote
-        acc_risk = minmax(out[acc_col])
+    # Getrennte Privacy-Scores für beide Bedrohungsmodelle.
+    cols_all = _privacy_scores(out, linkability_risk, "_AllSegments")
+    cols_rot = _privacy_scores(out, linkability_risk, "_RotationOnly")
 
-        # Privacy-Score Berechnung --> invertieren damit es ein Schutzwert ist --> Generiert Spalte.
-        out[f"Privacy_Score{k_suffix}"] = 0.5 * (1.0 - acc_risk) + 0.5 * (1.0 - linkability_risk)
-        # Anfügen an Liste für späteren durchlauf für Durchschnitt
-        privacy_cols.append(f"Privacy_Score{k_suffix}")
-
-    # Berechnet den Durchschnittlichen Privacy-Score über alle k-Spalten
-    if privacy_cols:
-        out["Privacy_Score_Avg"] = out[privacy_cols].mean(axis=1)
-    # Fallback
-    else:
-        out["Privacy_Score_Avg"] = 0.0
+    out["Privacy_Score_Avg_Segments"] = out[cols_all].mean(axis=1) if cols_all else 0.0
+    out["Privacy_Score_Avg_Rotation"] = out[cols_rot].mean(axis=1) if cols_rot else 0.0
     # Kneepoint berechnen und zurückgeben mit dem durchschnittlichen Privacy-Score
     df_knee = find_knee_point(
-        out, util_col="Utility_Score", priv_col="Privacy_Score_Avg"
+        out, util_col="Utility_Score", priv_col="Privacy_Score_Avg_Rotation"
     )
     # Plateau hinzufügen und direkt zurückgeben
     return add_plateau(df_knee, eps=eps)
