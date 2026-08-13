@@ -25,6 +25,8 @@ def run_sweep(
 
     # Bereinigt die Rohdaten und sortiert sie nach Nutzer und Zeit.
     df_clean = df_raw.copy()
+    # Timestamp in datetime konvertieren.
+    df_clean["used_at"] = pd.to_datetime(df_clean["used_at"], errors="coerce")
     # Baut das Vokabular.
     domain_to_idx = build_tracker_vocabulary(df_clean, tracker_mapping, vocab_size)
     # Baut Baseline-Matrix und Nutzerliste.
