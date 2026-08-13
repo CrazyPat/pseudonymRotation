@@ -17,17 +17,14 @@ from ..pseudonym.simulation import simulate_user_chunk
 from ..utils import log_status
 
 
-def _score_segments(segments_sorted, domain_to_idx, baseline_matrix, user_list, k_values, verbose=False):
-    """Baut Sparse-Matrix und berechnet kNN-Accuracy für eine gegebene Segment-Liste."""
+def _build_query_matrix(segments_sorted, tracker_to_idx, verbose=False):
+    """Baut die L2-normierte Sparse-Matrix aus einer Segment-Liste."""
     # Dimensionen für Sparse Matrix definieren
     num_segments = len(segments_sorted)
-    # Falls keine Segmente übergeben wurden --> leeres Ergebnis.
-    if num_segments == 0:
-        return {f"kNN_Accuracy_k{k}": 0.0 for k in k_values}, 0
+    # Anzahl an Tracker pro Segment. Trackername --> index
+    num_vocab = len(tracker_to_idx)
 
-    num_vocab = len(domain_to_idx)
-
-    # Listen für COO-Format
+    # Listen für COO-Format also Koorinaten ungleich null.
     log_status(f"Sparse-Koordinaten ({num_segments} x {num_vocab})", verbose)
     rows = []
     cols = []
@@ -43,25 +40,35 @@ def _score_segments(segments_sorted, domain_to_idx, baseline_matrix, user_list, 
 
         # Speichert Nutzer_ID.
         query_A.append(seg["user_id"])
-        # Domain-Counter aus dem JSON laden
+        # Tracker-Counter aus dem JSON laden
         counter_data = json.loads(seg["tracker_counter_json"])
 
         # Befüllt die Listen für das COO-Format mit den aus dem Vokabular gezählten Trackern.
         for dom, count in counter_data.items():
-            if dom in domain_to_idx:
+            if dom in tracker_to_idx:
                 rows.append(i)
-                cols.append(domain_to_idx[dom])
+                cols.append(tracker_to_idx[dom])
                 data.append(float(count))
 
     # Erstelle direkt eine CSR-Matrix aus den COO-Arrays
     query_matrix = sp.coo_matrix((data, (rows, cols)), shape=(num_segments, num_vocab)).tocsr()
-    # Berechnet die Norm der Matrix.
+    # Berechnet die Norm der Matrix für jeden EINZELNEN Nutzer. A1 aus 2d 1d Array
     row_norms = np.sqrt(query_matrix.multiply(query_matrix).sum(axis=1).A1)
     # Falls teilen durch 0
     row_norms[row_norms == 0] = 1.0
-    inv_norms = sp.diags(1.0 / row_norms)
+    inv_norms = sp.diags(1.0 / row_norms) # --> https://docs.scipy.org/doc/scipy-1.13.1/reference/generated/scipy.sparse.diags.html
     # Normiert die Matrix auf einheitliche Länge 1.0.
     query_matrix = inv_norms.dot(query_matrix)
+
+    return query_matrix, np.array(query_A)
+
+
+def _score_segments(query_matrix, query_users, baseline_matrix, user_list, k_values, verbose=False):
+    """kNN-Accuracy für Query-Matrix."""
+    num_segments = query_matrix.shape[0]
+    # Falls keine Segmente übergeben wurden --> leeres Ergebnis.
+    if num_segments == 0:
+        return {f"kNN_Accuracy_k{k}": 0.0 for k in k_values}, 0
 
     log_status("k-NN Auswertung", verbose)
     correct_predictions = {k: 0 for k in k_values}
@@ -70,9 +77,9 @@ def _score_segments(segments_sorted, domain_to_idx, baseline_matrix, user_list, 
     batch_size = 10000
     max_k = max(k_values)
 
-    # Nutzer-IDs
+    # Nutzer-IDs bzw Schlüssel zum Abgleichen.
     user_array = np.array(user_list)
-    query_users = np.array(query_A)
+
     # Fortschrittsanzeige
     for start_idx in range(0, num_segments, batch_size):
         end_idx = min(start_idx + batch_size, num_segments)
@@ -100,7 +107,7 @@ def _score_segments(segments_sorted, domain_to_idx, baseline_matrix, user_list, 
     return acc, num_segments
 
 
-def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_matrix: np.ndarray, user_list: list, domain_to_idx: dict,
+def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_matrix: np.ndarray, user_list: list, tracker_to_idx: dict,
     tracker_mapping: dict, k_values: list, use_parallel: bool = True, verbose: bool = False) -> dict:
     # Gruppiert die Nutzer nach der ID und erstellt eine Liste für die Simulation.
     grouped_users = list(df_eval.groupby("panelist_id", sort=False))
@@ -139,56 +146,18 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
     if not all_segments:
         return None
     
-    # Segemente werden sortiert nach Nutzer,Slot und Segment_id damit die Reihenfolge für die Kosinus-Ähnlichkeit korrekt ist.
+    # Segemente werden sortiert nach Nutzer,Slot und Segment_id.
     log_status(f"Total Segmente: {len(all_segments)}.", verbose)
     # Zählt wie oft welcher Rotations-Grund vorkam zur prüfung wann max_domains greift.
     trigger_counts = Counter(s["trigger"] for s in all_segments)
     segments_sorted = sorted(all_segments, key=lambda x: (x["user_id"], x["slot_id"], x["segment_id"]))
-    
-    # Dimensionen für Sparse Matrix definieren
-    num_segments = len(segments_sorted)
-    num_vocab = len(domain_to_idx)
 
-    # Listen für COO-Format
-    log_status(f"Sparse-Koordinaten ({num_segments} x {num_vocab})", verbose)
-    rows = []
-    cols = []
-    data = []
-    
-    # Speichert JEDE Zeile der Matrix. Wichtig für spätere Berechnung der Kosinus-Ähnlichkeit zwischen aufeinanderfolgenden Segmenten.
-    query_A = []
     # Alle TP-Events pro Segment --> Für Utility.
-    third_party_counts = []
-    
-    # Über alle Segmente
-    for i, seg in enumerate(segments_sorted):
-        if i > 0 and i % 500000 == 0:
-            log_status(f"Verarbeite Segmente: {i}/{num_segments}", verbose)
+    third_party_counts = [s["tracker_events"] for s in segments_sorted]
 
-        # Speichert Nutzer_ID.
-        query_A.append(seg["user_id"])
-        # Speichert die Anzahl an Third-Party-Events pro Segment.
-        third_party_counts.append(seg["tracker_events"])
-        # Domain-Counter aus dem JSON laden
-        counter_data = json.loads(seg["tracker_counter_json"])
-
-
-        # Befüllt die Listen für das COO-Format mit den aus dem Vokabular gezählten Trackern.
-        for dom, count in counter_data.items():
-            if dom in domain_to_idx:
-                rows.append(i)
-                cols.append(domain_to_idx[dom])
-                data.append(float(count))
-    
-    # Erstelle direkt eine CSR-Matrix aus den COO-Arrays
-    query_matrix = sp.coo_matrix((data, (rows, cols)), shape=(num_segments, num_vocab)).tocsr()
-    # Berechnet die Norm der Matrix.
-    row_norms = np.sqrt(query_matrix.multiply(query_matrix).sum(axis=1).A1)
-    # Falls teilen durch 0
-    row_norms[row_norms == 0] = 1.0
-    inv_norms = sp.diags(1.0 / row_norms)
-    # Normiert die Matrix auf einheitliche Länge 1.0.
-    query_matrix = inv_norms.dot(query_matrix)
+    # Einmalig die große Matrix für ALLE Segmente bauen. Wird für Cosine UND beide kNN-Läufe wiederverwendet.
+    query_matrix, query_users = _build_query_matrix(segments_sorted, tracker_to_idx, verbose)
+    num_segments = query_matrix.shape[0]
 
     log_status("Kosinus-Ähnlichkeit und k-NN Auswertung", verbose)
     cosine_sims = []
@@ -196,7 +165,7 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
     # Kosinus-Ähnlichkeit aufeinanderfolgender Segmente
     if num_segments > 1:
         row_sims = query_matrix[1:].multiply(query_matrix[:-1]).sum(axis=1).A1
-        
+
         for i in range(1, num_segments):
             prev = segments_sorted[i - 1]
             curr = segments_sorted[i]
@@ -206,10 +175,14 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
     log_status("Konfiguration abgeschlossen.", verbose)
 
     # Nur echte Rotationen
-    segments_rotation_only = [s for s in segments_sorted if s["trigger"] == "rotation_threshold"]
+    rotation_indices = [i for i, s in enumerate(segments_sorted) if s["trigger"] == "rotation_threshold"]
+    query_matrix_rot = query_matrix[rotation_indices]
+    # Ground-Truth
+    query_users_rot = query_users[rotation_indices]
+
     # Zwei Angreifer einmal alle Segmente und einmal nur nach abgeschlossener Rotation.
-    acc_all, n_all = _score_segments(segments_sorted, domain_to_idx, baseline_matrix, user_list, k_values, verbose)
-    acc_rot, n_rot = _score_segments(segments_rotation_only, domain_to_idx, baseline_matrix, user_list, k_values, verbose)
+    acc_all, n_all = _score_segments(query_matrix, query_users, baseline_matrix, user_list, k_values, verbose)
+    acc_rot, n_rot = _score_segments(query_matrix_rot, query_users_rot, baseline_matrix, user_list, k_values, verbose)
     # Durchschnitt zwischen den Segmenten. Fallback auf 0 falls keine Segmente.
     mean_cosine = float(np.mean(cosine_sims)) if cosine_sims else 0.0
 
@@ -244,5 +217,4 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
             f"Cosine: {result['Mean_Cosine_Prev_Pseudonym']:.4f} | Util: {result['Avg_Utility_ThirdParty']:.2f}",
             True,
         )
-        
     return result

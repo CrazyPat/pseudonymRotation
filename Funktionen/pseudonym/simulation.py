@@ -108,6 +108,7 @@ class UserSimulation:
         for tracker in self.tracker_mapping.get(domain, []):
             slot.tracker_events += 1
             slot.cum_tracker_events += 1
+            # tracker_counter.json speichert anzahl an tracker pro segment.
             slot.tracker_counter[tracker] += 1
         # Letzter Zeitstempel wird gesetzt, um Inaktivität zu prüfen.
         slot.last_event_time = timestamp
