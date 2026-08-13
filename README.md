@@ -46,7 +46,6 @@ Inhalt ist die Python-Simulations- und Evaluationspipeline für die Bachelorarbe
 │   └── utils.py                             # Logging-Funktion
 ├── tracker.py                               # Download, Vorverarbeitung und Auswertung beider Datensätze
 ├── run.py                                   # Hauptskript
-├── load_whotracksme.py                      # Läd den WhoTracks.Me-Datensatz in den Ordern Data/datensatz/whotracksme
 ├── requirements.txt                         # Projekt-Abhängigkeiten
 └── README.md                                # Projektdokumentation
 ```
