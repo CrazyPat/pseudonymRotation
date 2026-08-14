@@ -1,3 +1,4 @@
+"""Funktionen zur Auswertung der Ergebnisse und Berechnung von Scores."""
 import numpy as np
 import pandas as pd
 
@@ -12,15 +13,8 @@ def minmax(series: pd.Series) -> pd.Series:
     return pd.Series(np.ones(len(s)), index=s.index) if min_v == max_v else (s - min_v) / (max_v - min_v)
 
 
-
-def find_knee_point(
-    df: pd.DataFrame,
-    util_col: str = "Utility_Score",
-    priv_col: str = "Privacy_Score_Avg",
-) -> pd.DataFrame:
-    """
-    Bestimmt das Optimum also Kneepoint zwischen Nutzen und Privacy.
-    """
+def find_knee_point(df: pd.DataFrame,util_col: str = "Utility_Score",priv_col: str = "Privacy_Score_Avg",) -> pd.DataFrame:
+    """Bestimmt das Optimum also Kneepoint zwischen Nutzen und Privacy."""
     # Copy erstellen
     out = df.copy()
 
@@ -102,12 +96,12 @@ def add_plateau(df: pd.DataFrame, eps: float = 0.005) -> pd.DataFrame:
         # Utility-Score der aktullen conf.
         u = row["Utility_Score"]
         # Privacy-Score der aktullen conf.
-        p = row["Privacy_Score_Avg"]
+        p = row["Privacy_Score_Avg_Rotation"]
 
         # Punkt entfernen nur wenn ein Pareto-Punkt existiert der in beiden BESSER ist als eps.
         more_than_eps = (
             (pareto_points["Utility_Score"] - u > eps) &
-            (pareto_points["Privacy_Score_Avg"] - p > eps)
+            (pareto_points["Privacy_Score_Avg_Rotation"] - p > eps)
         ).any()
         # Werte hinzufügen, die nicht mehr als eps schlechter sind als Pareto-Front.
         in_plateau.append(not more_than_eps)
@@ -145,8 +139,8 @@ def add_scores(df: pd.DataFrame, eps: float = 0.005) -> pd.DataFrame:
     # Verkettungsrisiko normalisieren.
     linkability_risk = minmax(out["Mean_Cosine_Prev_Pseudonym"])
     # Getrennte Privacy-Scores für beide Bedrohungsmodelle.
-    cols_all = _privacy_scores(out, linkability_risk, "_AllSegments")
-    cols_rot = _privacy_scores(out, linkability_risk, "_RotationOnly")
+    cols_all = _privacy_scores(out, linkability_risk, "_Segments")
+    cols_rot = _privacy_scores(out, linkability_risk, "_Rotation")
 
     out["Privacy_Score_Avg_Segments"] = out[cols_all].mean(axis=1) if cols_all else 0.0
     out["Privacy_Score_Avg_Rotation"] = out[cols_rot].mean(axis=1) if cols_rot else 0.0

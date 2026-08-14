@@ -44,10 +44,10 @@ def _build_query_matrix(segments_sorted, tracker_to_idx, verbose=False):
         counter_data = json.loads(seg["tracker_counter_json"])
 
         # Befüllt die Listen für das COO-Format mit den aus dem Vokabular gezählten Trackern.
-        for dom, count in counter_data.items():
-            if dom in tracker_to_idx:
+        for tracker, count in counter_data.items():
+            if tracker in tracker_to_idx:
                 rows.append(i)
-                cols.append(tracker_to_idx[dom])
+                cols.append(tracker_to_idx[tracker])
                 data.append(float(count))
 
     # Erstelle direkt eine CSR-Matrix aus den COO-Arrays
@@ -150,6 +150,7 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
     log_status(f"Total Segmente: {len(all_segments)}.", verbose)
     # Zählt wie oft welcher Rotations-Grund vorkam zur prüfung wann max_domains greift.
     trigger_counts = Counter(s["trigger"] for s in all_segments)
+    # output sieht man in outputs.md
     segments_sorted = sorted(all_segments, key=lambda x: (x["user_id"], x["slot_id"], x["segment_id"]))
 
     # Alle TP-Events pro Segment --> Für Utility.
@@ -157,6 +158,7 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
 
     # Einmalig die große Matrix für ALLE Segmente bauen. Wird für Cosine UND beide kNN-Läufe wiederverwendet.
     query_matrix, query_users = _build_query_matrix(segments_sorted, tracker_to_idx, verbose)
+    # Gibt Menge an Segmenten zurück.
     num_segments = query_matrix.shape[0]
 
     log_status("Kosinus-Ähnlichkeit und k-NN Auswertung", verbose)

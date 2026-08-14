@@ -4,7 +4,6 @@ Zuweisungs-Logik der Pseudonym-Rotation.
 
 import hashlib
 import hmac
-import secrets
 from typing import Dict, Set
 
 import numpy as np
@@ -14,6 +13,7 @@ from ..config import PipelineConfig
 # Service-Object
 class SlotAssigner:
     """Verwaltet die Zuordnung (Domain -> Slot) und (Slot -> Domains)."""
+
 
     def __init__(self, user_id: str, cfg: PipelineConfig, rng: np.random.Generator, local_secret: bytes,):
         # User_id
@@ -50,6 +50,7 @@ class SlotAssigner:
         # Rückgabe als Hexadezimal-String
         ).hexdigest()
 
+
     def assign_domain(self, domain: str) -> int:
         """Hasht die Domain und weist einen Slot zu."""
         # Domainhashing
@@ -60,11 +61,12 @@ class SlotAssigner:
         # Falls keine Zuweisung existiert, wird ein zufälliger Slot zugewiesen.
         # Randomgenerator wählt zwischen 0 und in der Konfig angegebenen Slots. (numpy dann in py integer)
         assigned_slot = int(self.rng.integers(0, self.cfg.num_slots))
-        # In Mapping eintragen für spätere Prüfung.
+        # In Mapping eintragen. Pseudonym wird dem Slot zugewiesen.
         self.domain_to_slot_map[pseudonym] = assigned_slot
-        # Für Rotationen eintragen.
+        # Für Rotationen eintragen. Wer gehört alles zu diesem Slot.
         self.slot_to_pseudonym[assigned_slot].add(pseudonym)
         return assigned_slot
+
 
     def release_slot(self, slot_id: int) -> None:
         """Rotation eines Slots"""

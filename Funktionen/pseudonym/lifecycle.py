@@ -74,20 +74,20 @@ def update_lifecycle_on_event(slot: SlotState, cfg: PipelineConfig, timestamp: p
             slot.warm_reached_at = timestamp
 
 
-def threshold_reached(slot: SlotState, cfg: PipelineConfig, current_time: pd.Timestamp) -> bool:
+def threshold_reached(slot: SlotState, cfg: PipelineConfig, current_time: pd.Timestamp) -> str | None:
     """Rotations-Schwellenwert-Prüfung für einen Slot."""
     # Setzt die Schwellenwerte für Events und Domains aus der Config. Wenn erreicht dann True
     # Schwellenwert Tracker.
     if slot.cum_tracker_events >= cfg.max_events:
-        return True
+        return "Events"
     # Schwellenwert Domains.
     if len(slot.cum_unique_domains) >= cfg.max_domains:
-        return True
+        return "Domains"
     # Schwellenwert Days.
     if slot.pseudonym_start_time is not None and (current_time - slot.pseudonym_start_time) >= timedelta(days=cfg.max_days):
-        return True
+        return "Days"
     # Sonst noch kein Schwellenwert erreicht.
-    return False
+    return None
 
 
 def close_segment(slot: SlotState) -> None:

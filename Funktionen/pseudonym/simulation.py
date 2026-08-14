@@ -43,7 +43,7 @@ class UserSimulation:
         self.assigner = SlotAssigner(user_id=user_id, cfg=cfg, rng=self.rng, local_secret=local_secret)
 
 
-    def _close_slot_segment(self, slot_id: int, reason: str, close_time: pd.Timestamp) -> None:
+    def _close_slot_segment(self, slot_id: int, reason: str, close_time: pd.Timestamp, trigger_detail: str | None = None) -> None:
         """Datensammlung nach Abschluss eines Segments."""
         slot = self.slots[slot_id]
         # Wird abgebrochen falls ein Segment keine Events hatte.
@@ -64,6 +64,7 @@ class UserSimulation:
             "tracker_events": slot.tracker_events,
             "unique_domains": len(slot.unique_domains),
             "trigger": reason,
+            "trigger_detail": trigger_detail,
             "tracker_counter_json": json.dumps(slot.tracker_counter, ensure_ascii=False),
             "final_state": slot.current_state.name
         })
@@ -115,8 +116,9 @@ class UserSimulation:
         # Lifecycle-Logik prüft den Zustand des Slots und ob eine Rotation notwendig ist.
         update_lifecycle_on_event(slot, self.cfg, timestamp)
         # Beim erreichen eines Schwellenwertes wird das Segment geschlossen und der Slot restlos gelöscht.
-        if threshold_reached(slot, self.cfg, timestamp):
-            self._close_slot_segment(slot_id, "rotation_threshold", timestamp)
+        reached = threshold_reached(slot, self.cfg, timestamp)
+        if reached is not None:
+            self._close_slot_segment(slot_id, "rotation_threshold", timestamp, reached)
 
 
     def finalize(self) -> None:
