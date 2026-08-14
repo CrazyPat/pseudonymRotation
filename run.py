@@ -20,20 +20,18 @@ if __name__ == "__main__":
         all_unique_trackers.update(trackers)
     total_vocab_size = len(all_unique_trackers)
 
-    slot_configs = [10, 35, 50, 80, 100, 150] 
-    domain_configs = [10, 50, 100]
-    event_configs = [200, 450, 700]
+    # slot_configs = [10, 35, 50, 80, 100, 150] 
+    # domain_configs = [10, 50, 100]
+    # event_configs = [200, 450, 700]
+    # day_configs = [7, 20]
+    # timeout_configs = [30, 60]
+    # k_values = [1, 3, 5, 10, 20]
+    slot_configs = [50, 65, 80, 100, 125, 150, 200] 
+    domain_configs = [10]
+    event_configs = [450, 700, 900, 1200]
     day_configs = [7, 20]
     timeout_configs = [30, 60]
     k_values = [1, 3, 5, 10, 20]
-    # slot_configs = [35, 40, 45, 50, 55, 60, 65]
-    # domain_configs = [20, 30, 45, 50, 55, 60, 75, 90, 105, 125, 140, 200]
-    # event_configs = [450, 700, 800]
-    # k_values = [1, 3, 5, 10, 20]
-    # slot_configs = [35]
-    # domain_configs = [20]
-    # event_configs = [450]
-    # k_values = [1, 3, 5, 10, 20]
 
     results_df = run_sweep(
         df_raw=df_raw,
@@ -64,7 +62,7 @@ if __name__ == "__main__":
 
         # Ranking nach Privatsphäre.
         df_priv = results_df.sort_values(
-            by=["Privacy_Score_Avg", "Anzahl_Slots", "Total_Resets"],
+            by=["Privacy_Score_Avg_Rotation", "Anzahl_Slots", "Total_Resets"],
             ascending=[False, True, True]
         )
         df_priv.to_csv(out_dir / "privacy.csv", index=False)
