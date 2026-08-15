@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 
-def build_tracker_vocabulary(df: pd.DataFrame, tracker_mapping: dict, vocab_size: int) -> dict[str, int]:
+def build_tracker_vocabulary(tracker_mapping: dict, vocab_size: int) -> dict[str, int]:
     """Erstellt ein Vokabular der am Häufigsten vorkommenden Tracker in den Daten."""
     # Es werden alle Tracker aus dem Mapping geladen.
     all_trackers = [tracker for trackers in tracker_mapping.values() for tracker in trackers]
@@ -17,12 +17,12 @@ def build_tracker_vocabulary(df: pd.DataFrame, tracker_mapping: dict, vocab_size
     return {d[0]: i for i, d in enumerate(top_trackers)}
 
 
-def build_baseline_matrix(df: pd.DataFrame, tracker_mapping: dict, domain_to_idx: dict) -> tuple[np.ndarray, list]:
+def build_baseline_matrix(df: pd.DataFrame, tracker_mapping: dict, tracker_to_idx: dict) -> tuple[np.ndarray, list]:
     """Erstellt die Baseline für jeden Nutzer, basierend auf der Häufigkeit der Tracker in den Daten."""
     # Einzigartige Nutzer werden gewählt
     unique_users = df["panelist_id"].unique()
     # Matrixaufbau = Nutzer x Tracker
-    matrix = np.zeros((len(unique_users), len(domain_to_idx)), dtype=float)
+    matrix = np.zeros((len(unique_users), len(tracker_to_idx)), dtype=float)
     user_list = []
     # Befüllen der Matrix.
     for i, user_id in enumerate(unique_users):
@@ -38,9 +38,9 @@ def build_baseline_matrix(df: pd.DataFrame, tracker_mapping: dict, domain_to_idx
         # Tracker zählen
         counts = Counter(user_trackers)
         # Befüllt Matrix mit den gezählten Trackern.
-        for dom, count in counts.items():
-            if dom in domain_to_idx:
-                matrix[i, domain_to_idx[dom]] = float(count)
+        for tracker, count in counts.items():
+            if tracker in tracker_to_idx:
+                matrix[i, tracker_to_idx[tracker]] = float(count)
         
     # Normierung der Matrix --> Um Vergleichbarkeit der Nutzer zu schaffen.
     norm = np.linalg.norm(matrix, axis=1, keepdims=True)
