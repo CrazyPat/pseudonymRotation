@@ -19,15 +19,18 @@ from ..utils import log_status
 
 def _build_query_matrix(segments_sorted, tracker_to_idx, verbose=False):
     """Baut die L2-normierte Sparse-Matrix aus einer Segment-Liste."""
-    # Dimensionen für Sparse Matrix definieren
+    # Alle Segmente.
     num_segments = len(segments_sorted)
-    # Anzahl an Tracker pro Segment. Trackername --> index
+    # Anzahl an allen eindeutigen Trackern.
     num_vocab = len(tracker_to_idx)
 
     # Listen für COO-Format also Koorinaten ungleich null.
     log_status(f"Sparse-Koordinaten ({num_segments} x {num_vocab})", verbose)
+    # Segment index.
     rows = []
+    # Tracker index.
     cols = []
+    # Menge der Tracker.
     data = []
 
     # Speichert JEDE Zeile der Matrix. Wichtig für spätere Berechnung der Kosinus-Ähnlichkeit zwischen aufeinanderfolgenden Segmenten.
@@ -46,7 +49,9 @@ def _build_query_matrix(segments_sorted, tracker_to_idx, verbose=False):
         # Befüllt die Listen für das COO-Format mit den aus dem Vokabular gezählten Trackern.
         for tracker, count in counter_data.items():
             if tracker in tracker_to_idx:
+                # Segment.
                 rows.append(i)
+                # Fügt den Tracker aus dem Vokabular an die Stelle der Spalte.
                 cols.append(tracker_to_idx[tracker])
                 data.append(float(count))
 
@@ -56,10 +61,11 @@ def _build_query_matrix(segments_sorted, tracker_to_idx, verbose=False):
     row_norms = np.sqrt(query_matrix.multiply(query_matrix).sum(axis=1).A1)
     # Falls teilen durch 0
     row_norms[row_norms == 0] = 1.0
+    # Inverse Normen für die Diagonalmatrix. 
     inv_norms = sp.diags(1.0 / row_norms) # --> https://docs.scipy.org/doc/scipy-1.13.1/reference/generated/scipy.sparse.diags.html
-    # Normiert die Matrix auf einheitliche Länge 1.0.
+    # Normiert die Matrix auf einheitliche Länge 1.0. invertierte normen werden mit matrix inhalt multipliziert.
     query_matrix = inv_norms.dot(query_matrix)
-
+    # Unterschied zu BaselineMatrix ist nur, dass query_matrix über alle Segmente geht.
     return query_matrix, np.array(query_A)
 
 
@@ -71,24 +77,30 @@ def _score_segments(query_matrix, query_users, baseline_matrix, user_list, k_val
         return {f"kNN_Accuracy_k{k}": 0.0 for k in k_values}, 0
 
     log_status("k-NN Auswertung", verbose)
+    # Alle k werte erhalten initial k:0.
     correct_predictions = {k: 0 for k in k_values}
 
     # k-NN
     batch_size = 10000
+    # um zeit zu sparen bei der berechnung.
     max_k = max(k_values)
 
-    # Nutzer-IDs bzw Schlüssel zum Abgleichen.
+    # Nutzer-IDs bzw Schlüssel zum Abgleichen. für die baseline_matrix in welcher reihenfolge diese gespeichert sind.
     user_array = np.array(user_list)
 
-    # Fortschrittsanzeige
+    
     for start_idx in range(0, num_segments, batch_size):
+        # ende vom aktuellen batch
         end_idx = min(start_idx + batch_size, num_segments)
 
+        # Fortschrittsanzeige
         if start_idx > 0 and start_idx % 100000 == 0:
             log_status(f"Auswertung: {start_idx}/{num_segments} Segmente", verbose)
 
         # Matrixmultiplikation für den Batch
         query_batch = query_matrix[start_idx:end_idx]
+        # Matrixmul. baseline muss transponiert werden. (Segmente x Tracker) * (Tracker x Nutzer) = Segmente x Nutzer. .T (Segemente x Tracker) * (Nutzer * Tracker)
+        # Ergebnis ist matrix mit ähnlichkeiten.
         sims = query_batch.dot(baseline_matrix.T)
         # Sortiert alle Zeilen des Batches gleichzeitig und holt nur die Top-max_k Spalten
         top_indices = np.argsort(sims, axis=1)[:, ::-1][:, :max_k]
@@ -153,7 +165,7 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
     # output sieht man in outputs.md
     segments_sorted = sorted(all_segments, key=lambda x: (x["user_id"], x["slot_id"], x["segment_id"]))
 
-    # Alle TP-Events pro Segment --> Für Utility.
+    # liste aller counts von trackern pro segment.
     third_party_counts = [s["tracker_events"] for s in segments_sorted]
 
     # Einmalig die große Matrix für ALLE Segmente bauen. Wird für Cosine UND beide kNN-Läufe wiederverwendet.
@@ -164,22 +176,26 @@ def evaluate_configuration(df_eval: pd.DataFrame, cfg: PipelineConfig, baseline_
     log_status("Kosinus-Ähnlichkeit und k-NN Auswertung", verbose)
     cosine_sims = []
 
-    # Kosinus-Ähnlichkeit aufeinanderfolgender Segmente
+    # Kosinus-Ähnlichkeit aufeinanderfolgender Segmente bzw linkability.
     if num_segments > 1:
+        # query_matrix[1:] vorgänger Segmente, query_matrix[:-1] Nachfolger Segmente.
+        # Ähnlcihkeit zwischen aufeinanderfolgenden Segmenten.
         row_sims = query_matrix[1:].multiply(query_matrix[:-1]).sum(axis=1).A1
 
         for i in range(1, num_segments):
             prev = segments_sorted[i - 1]
             curr = segments_sorted[i]
+            # Nur wenn user und slot id gleich + rotation wirklcih durchgeführt wurde im vorgänger.
             if prev["user_id"] == curr["user_id"] and prev["slot_id"] == curr["slot_id"] and prev["trigger"] == "rotation_threshold":
                 cosine_sims.append(float(row_sims[i - 1]))
 
     log_status("Konfiguration abgeschlossen.", verbose)
 
-    # Nur echte Rotationen
+    # Nur echte Rotationen damit als ergebnis alle indexe aller segmenete, welche rotiert wurden
     rotation_indices = [i for i, s in enumerate(segments_sorted) if s["trigger"] == "rotation_threshold"]
+    # nur die segemente wählen
     query_matrix_rot = query_matrix[rotation_indices]
-    # Ground-Truth
+    # Ground-Truth aller user die rotiert wurden.
     query_users_rot = query_users[rotation_indices]
 
     # Zwei Angreifer einmal alle Segmente und einmal nur nach abgeschlossener Rotation.

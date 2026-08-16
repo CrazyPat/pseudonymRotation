@@ -28,9 +28,9 @@ def run_sweep(
     # Timestamp in datetime konvertieren.
     df_clean["used_at"] = pd.to_datetime(df_clean["used_at"], errors="coerce")
     # Baut das Vokabular.
-    domain_to_idx = build_tracker_vocabulary(df_clean, tracker_mapping, vocab_size)
+    tracker_to_idx = build_tracker_vocabulary(tracker_mapping, vocab_size)
     # Baut Baseline-Matrix und Nutzerliste.
-    baseline_matrix, user_list = build_baseline_matrix(df_clean, tracker_mapping, domain_to_idx)
+    baseline_matrix, user_list = build_baseline_matrix(df_clean, tracker_mapping, tracker_to_idx)
     # Wählt nur die Top-Nutzer für die Evaluation basierend auf der Anzahl ihrer Events. Es wird aber ein Vollständiger durchlauf Simuliert (Also alle Nutzer werden genutzt)
     top_users = df_clean["panelist_id"].value_counts().head(num_eval_users).index
     df_eval = df_clean[df_clean["panelist_id"].isin(top_users)].copy()
@@ -73,7 +73,7 @@ def run_sweep(
             log_status(f"Starte Konfiguration {config_index}/{total_configs} (Slots={s}, Dom={d}, Ev={e}, Days={day}, Timeout={t})", True)
         # Evaluierung der config mit parametern. --> dict mit allen Werten (kNN-Accuracy, Cosine Similarity usw).
         res = evaluate_configuration(
-            df_eval, cfg, baseline_matrix, user_list, domain_to_idx, tracker_mapping,
+            df_eval, cfg, baseline_matrix, user_list, tracker_to_idx, tracker_mapping,
             k_values=k_values, 
             use_parallel=use_parallel, verbose=verbose
         )

@@ -24,11 +24,19 @@ if __name__ == "__main__":
     # domain_configs = [10, 50, 100]
     # event_configs = [200, 450, 700]
     # day_configs = [7, 20]
+    # timeout_configs = [30, 60] --> https://support.google.com/analytics/answer/2731565?hl=de#zippy=%2Cthemen-in-diesem-artikel
+    # k_values = [1, 3, 5, 10, 20]
+
+    # slot_configs = [50, 65, 80, 100, 125, 150, 200] 
+    # domain_configs = [10]
+    # event_configs = [450, 700, 900, 1200]
+    # day_configs = [7, 20]
     # timeout_configs = [30, 60]
     # k_values = [1, 3, 5, 10, 20]
-    slot_configs = [50, 65, 80, 100, 125, 150, 200] 
+
+    slot_configs = [65, 150]
     domain_configs = [10]
-    event_configs = [450, 700, 900, 1200]
+    event_configs = [5000, 7500, 10000]
     day_configs = [7, 20]
     timeout_configs = [30, 60]
     k_values = [1, 3, 5, 10, 20]

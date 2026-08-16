@@ -5,7 +5,7 @@ import pandas as pd
 
 def minmax(series: pd.Series) -> pd.Series:
     """Standardisiert Wertebereich zwischen 0 und 1.0"""
-    # Alle Werte in float.
+    # Alle Werte in float. 1d df
     s = series.astype(float)
     # Kleinster und größter Wert.
     min_v, max_v = s.min(), s.max()
@@ -129,7 +129,7 @@ def add_scores(df: pd.DataFrame, eps: float = 0.005) -> pd.DataFrame:
     # Kopie.
     out = df.copy()
 
-    # Utility-Score aus normalisierten trackern pro segment.
+    # Utility-Score aus normalisierten trackern pro segment. Mean über Menge an allen Trackern die gesehen wurden über alle Konfigs.
     util_gain = minmax(out["Avg_Utility_ThirdParty"])
     # Reset-Kosten: Wie oft musste resettet werden und damit das System arbeiten.
     reset_cost = minmax(out["Total_Resets"])
