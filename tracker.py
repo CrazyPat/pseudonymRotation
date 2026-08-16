@@ -22,7 +22,7 @@ def load_wtm_data(sites_path: str, trackers_path: str) -> Dict[str, List[str]]:
     # Tracker Spalte normalisieren
     st_df["tracker"] = st_df["tracker"].astype(str).str.strip()
 
-    # Metadatentabelle laden
+    # Metadatentabelle laden --> notwendig um Kategorien zu filtern.
     t_df = pd.read_csv(trackers_path, usecols=["tracker", "category"])
     # Tracker normalisieren
     t_df["tracker"] = t_df["tracker"].astype(str).str.strip()
@@ -31,6 +31,8 @@ def load_wtm_data(sites_path: str, trackers_path: str) -> Dict[str, List[str]]:
     # Duplikate entfernen
     t_df = t_df.drop_duplicates(subset=["tracker"], keep="last")
     # Alle Dienste die Ausgeschlossen werden, weil sie nicht relevant sind (v)
+    # Unterscheidung zwischen Infrastruktur und verhaltensbasierten Trackern.
+    # CND = Content Delivery Network (sorgen für schnellere Ladezeiten von zb Bildern), customer_interaktions = zb. Live-Chat-Fenster für Nutzer, audio_video_player = zb. iFrames, extensions = Browser-Extensions Aufrufe nicht webseite.
     ausgeschlossene_kategorien = {"cdn", "hosting", "customer_interaction", "audio_video_player", "extensions"}
 
     # Tabellen per Left-Join verknüpfen
@@ -73,7 +75,7 @@ def run_pipeline(input_file: str, wtm_sites: str, wtm_trackers: str, clean_csv: 
     # Tracker mappen
     df["trackers"] = domains.map(lambda d: wtm_map.get(d, []))
     
-    # Tracker-Anzahl bestimmen
+    # Tracker-Anzahl bestimmen pro Domain.
     df["tracker_count"] = df["trackers"].apply(len)
 
     # Unmapped filtern falls aktiv
