@@ -51,10 +51,8 @@ class SlotAssigner:
         ).hexdigest()
 
 
-    def assign_domain(self, domain: str) -> int:
+    def assign_domain(self, pseudonym: str) -> int:
         """Hasht die Domain und weist einen Slot zu."""
-        # Domainhashing
-        pseudonym = self._hash_domain(domain)
         # Prüfung ob Domain bereits zugewiesen ist. Falls ja wird Slot zurückgegeben.
         if pseudonym in self.domain_to_slot_map:
             return self.domain_to_slot_map[pseudonym]

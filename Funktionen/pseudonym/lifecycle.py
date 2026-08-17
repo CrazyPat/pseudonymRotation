@@ -24,27 +24,24 @@ class LifecycleState(Enum):
 class SlotState:
     # Meint alle Events, damit auch Domains.
     page_visits: int = 0
-    # Alle Tracker auf einer Seite.
-    tracker_events: int = 0
+    domain_counter: Counter = field(default_factory=Counter)
+    last_domain: str | None = None
+    warm_logged: bool = False
+    warm_reached_at: pd.Timestamp | None = None
     # Eindeutige Domains als Set mit field.
     unique_domains: set = field(default_factory=set)
-    # Eindeutige Tracker als Set mit field.
-    tracker_counter: Counter = field(default_factory=Counter)
     #Zeitstempel speichern, damit das erste und letzte Event (Als pd Timestamp oder none).
     first_event_time: pd.Timestamp | None = None
     last_event_time: pd.Timestamp | None = None
+    reset_count: int = 0
 
     # Counter für Datenmenge in einem Pseudonym = Segment (Von Rotation zu Rotation).
     segment_index: int = 0
-    # Count für Resets eines Slots.
-    reset_count: int = 0
     # Status des Slots.
     warm_logged: bool = False
     warm_reached_at: pd.Timestamp | None = None
     # Initialzustand des Slots.
     current_state: LifecycleState = LifecycleState.FRESH
-    # kummulierte tracker events.
-    cum_tracker_events: int = 0
     # kummulierte domains.
     cum_unique_domains: set = field(default_factory=set)
     # startzeit des Pseudonyms.
@@ -59,13 +56,13 @@ def update_lifecycle_on_event(slot: SlotState, cfg: PipelineConfig, timestamp: p
         slot.current_state = LifecycleState.ACTIVE
 
     # WARM-Threshold berechnen (Threshold wird in der ..config.py --> pipeline_config definiert)
-    warm_tracker_threshold = cfg.max_events * cfg.warm_threshold_ratio
+    warm_event_threshold = cfg.max_events * cfg.warm_threshold_ratio
     warm_domain_threshold = cfg.max_domains * cfg.warm_threshold_ratio
 
     # ACTIVE -> WARM
     if slot.current_state == LifecycleState.ACTIVE and not slot.warm_logged:
         # Wenn der Theshold erreicht ist wird:
-        if slot.cum_tracker_events >= warm_tracker_threshold or len(slot.cum_unique_domains) >= warm_domain_threshold:
+        if slot.page_visits >= warm_event_threshold or len(slot.cum_unique_domains) >= warm_domain_threshold:
             # der Slot auf WARM gesetzt.
             slot.current_state = LifecycleState.WARM
             # der Slot auf WARM gelogged.
@@ -78,7 +75,7 @@ def threshold_reached(slot: SlotState, cfg: PipelineConfig, current_time: pd.Tim
     """Rotations-Schwellenwert-Prüfung für einen Slot."""
     # Setzt die Schwellenwerte für Events und Domains aus der Config. Wenn erreicht dann True
     # Schwellenwert Tracker.
-    if slot.cum_tracker_events >= cfg.max_events:
+    if slot.page_visits >= cfg.max_events:
         return "Events"
     # Schwellenwert Domains.
     if len(slot.cum_unique_domains) >= cfg.max_domains:
@@ -93,16 +90,15 @@ def threshold_reached(slot: SlotState, cfg: PipelineConfig, current_time: pd.Tim
 def close_segment(slot: SlotState) -> None:
     """Session-Grenze für die Auswertung."""
     slot.page_visits = 0
-    slot.tracker_events = 0
+    slot.domain_counter.clear()
+    slot.last_domain = None
     slot.unique_domains.clear()
-    slot.tracker_counter = Counter()
     slot.first_event_time = None
     slot.last_event_time = None
     slot.segment_index += 1
 
 def reset_pseudonym(slot: SlotState) -> None:
     """Löscht den Pseudonym-Zustand --> Kompletter Reset."""
-    slot.cum_tracker_events = 0
     slot.cum_unique_domains = set()
     slot.pseudonym_start_time = None
     slot.warm_logged = False

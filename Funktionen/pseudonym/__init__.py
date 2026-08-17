@@ -4,7 +4,7 @@ eigentliche Nutzer-Simulation.
 """
 
 from .lifecycle import LifecycleState, SlotState
-from .simulation import UserSimulation, simulate_user_chunk
+from .simulation import UserSimulation
 from .zuweisung import SlotAssigner
 
 __all__ = [
@@ -12,5 +12,4 @@ __all__ = [
     "SlotState",
     "SlotAssigner",
     "UserSimulation",
-    "simulate_user_chunk",
 ]
