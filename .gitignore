@@ -27,3 +27,10 @@ __pycache__/
 
 .DS_Store
 .vscode/
+
+Funktionen/auswertung/
+Funktionen/auswertung
+
+auswertung.ipynb
+
+run.py
