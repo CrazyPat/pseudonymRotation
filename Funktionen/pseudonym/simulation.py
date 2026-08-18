@@ -88,7 +88,7 @@ class UserSimulation:
         current_segment = slot.segment_index
 
         # Wenn exakt dieselbe Domain direkt wieder aufgerufen wird
-        if pseudonym == slot.last_domain:
+        if domain == slot.last_domain:
             slot.last_event_time = timestamp
             return slot_id, current_segment
         # Zeitstempel setzen beim ersten Event.
@@ -100,21 +100,23 @@ class UserSimulation:
         # Zähler erhöhen für ALLE.
         slot.page_visits += 1
         # Domain wird in Set gespeichert für eindeutige Domains.
-        slot.unique_domains.add(pseudonym)
+        slot.unique_domains.add(domain)
         # Kummulierte Domains auch zählen.
-        slot.cum_unique_domains.add(pseudonym)
+        slot.cum_unique_domains.add(domain)
         # Domain-Counter für Fingerprint erhöhen
-        slot.domain_counter[pseudonym] += 1
+        slot.domain_counter[domain] += 1
         # Letzte Domain für den nächsten Dedupe-Check merken
-        slot.last_domain = pseudonym
+        slot.last_domain = domain
         # Letzter Zeitstempel wird gesetzt, um Inaktivität zu prüfen.
         slot.last_event_time = timestamp
         # Lifecycle-Logik prüft den Zustand des Slots und ob eine Rotation notwendig ist.
         update_lifecycle_on_event(slot, self.cfg, timestamp)
-        # Beim erreichen eines Schwellenwertes wird das Segment geschlossen und der Slot restlos gelöscht.
-        reached = threshold_reached(slot, self.cfg, timestamp)
-        if reached is not None:
-            self._close_slot_segment(slot_id, "rotation_threshold", timestamp)
+        # Prüfen ob Schwellenwert erreicht wurde
+        reason_detail = threshold_reached(slot, self.cfg, timestamp)
+        if reason_detail is not None:
+            # reason = "rotation_threshold" und trigger_detail"Events", "Domains" oder "Days"
+            self._close_slot_segment(slot_id, reason="rotation_threshold", close_time=timestamp, trigger_detail=reason_detail)
+            
         return slot_id, current_segment
 
 
@@ -135,11 +137,10 @@ class UserSimulation:
     def run_user(self, df_user: pd.DataFrame) -> pd.DataFrame:
             results = []
             for row in df_user.itertuples(index=False):
-                pseudonym = self.assigner._hash_domain(row.domain)
                 slot_id, seg_id = self.process_event(row.domain, row.used_at)
                 results.append({
                     "panelist_id": self.user_id,
-                    "domain": pseudonym,
+                    "domain": row.domain,
                     "used_at": row.used_at,
                     "slot_id": slot_id,
                     "segment_id": seg_id

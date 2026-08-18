@@ -12,3 +12,4 @@ class PipelineConfig:
     max_events: int = 100
     max_days: int = 7
     warm_threshold_ratio: float = 0.8
+    use_tracker_mapping: bool = True

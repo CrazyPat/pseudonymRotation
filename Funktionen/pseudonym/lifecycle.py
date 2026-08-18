@@ -37,9 +37,6 @@ class SlotState:
 
     # Counter für Datenmenge in einem Pseudonym = Segment (Von Rotation zu Rotation).
     segment_index: int = 0
-    # Status des Slots.
-    warm_logged: bool = False
-    warm_reached_at: pd.Timestamp | None = None
     # Initialzustand des Slots.
     current_state: LifecycleState = LifecycleState.FRESH
     # kummulierte domains.
