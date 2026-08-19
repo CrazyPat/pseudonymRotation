@@ -34,11 +34,10 @@ class UserSimulation:
         # Seedgenerator für die Slot-Zuweisung. Jeder Nutzer bekommt sein eigenes Secret.
         seed_str = hashlib.sha256(str(user_id).encode("utf-8")).hexdigest()
         self.rng = np.random.default_rng(int(seed_str[:8], 16))
-
-        # self.user_secret = seed_str[8:24] --> OLD
         local_secret = SlotAssigner.gen_local_secret(user_id)
         # Zuweisungslogik aus zuweisung.py
         self.assigner = SlotAssigner(user_id=user_id, cfg=cfg, rng=self.rng, local_secret=local_secret)
+        self.global_last_domain: str | None = None
 
 
     def _close_slot_segment(self, slot_id: int, reason: str, close_time: pd.Timestamp, trigger_detail: str | None = None) -> None:
@@ -62,7 +61,6 @@ class UserSimulation:
             "unique_domains": len(slot.unique_domains),
             "trigger": reason,
             "trigger_detail": trigger_detail,
-            "final_state": slot.current_state.name,
             "domain_counter_json": json.dumps(slot.domain_counter, ensure_ascii=False),
             "final_state": slot.current_state.name
         })
@@ -86,11 +84,10 @@ class UserSimulation:
         slot = self.slots[slot_id]
         # Speichert das aktuelle Segment für den Return
         current_segment = slot.segment_index
-
-        # Wenn exakt dieselbe Domain direkt wieder aufgerufen wird
-        if domain == slot.last_domain:
+        if domain == self.global_last_domain:
             slot.last_event_time = timestamp
             return slot_id, current_segment
+        self.global_last_domain = domain
         # Zeitstempel setzen beim ersten Event.
         if slot.first_event_time is None:
             slot.first_event_time = timestamp
@@ -105,8 +102,6 @@ class UserSimulation:
         slot.cum_unique_domains.add(domain)
         # Domain-Counter für Fingerprint erhöhen
         slot.domain_counter[domain] += 1
-        # Letzte Domain für den nächsten Dedupe-Check merken
-        slot.last_domain = domain
         # Letzter Zeitstempel wird gesetzt, um Inaktivität zu prüfen.
         slot.last_event_time = timestamp
         # Lifecycle-Logik prüft den Zustand des Slots und ob eine Rotation notwendig ist.

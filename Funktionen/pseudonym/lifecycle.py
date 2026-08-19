@@ -25,7 +25,6 @@ class SlotState:
     # Meint alle Events, damit auch Domains.
     page_visits: int = 0
     domain_counter: Counter = field(default_factory=Counter)
-    last_domain: str | None = None
     warm_logged: bool = False
     warm_reached_at: pd.Timestamp | None = None
     # Eindeutige Domains als Set mit field.
@@ -88,7 +87,6 @@ def close_segment(slot: SlotState) -> None:
     """Session-Grenze für die Auswertung."""
     slot.page_visits = 0
     slot.domain_counter.clear()
-    slot.last_domain = None
     slot.unique_domains.clear()
     slot.first_event_time = None
     slot.last_event_time = None
