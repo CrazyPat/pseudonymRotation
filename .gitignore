@@ -42,3 +42,6 @@ Data/ergebnisse/
 Data/ergebnisse
 Data/ergebnisse_tracker_mapping/
 Data/ergebnisse_tracker_mapping
+
+days.py
+reason_analysis.py

@@ -54,11 +54,14 @@ def update_lifecycle_on_event(slot: SlotState, cfg: PipelineConfig, timestamp: p
     # WARM-Threshold berechnen (Threshold wird in der ..config.py --> pipeline_config definiert)
     warm_event_threshold = cfg.max_events * cfg.warm_threshold_ratio
     warm_domain_threshold = cfg.max_domains * cfg.warm_threshold_ratio
+    warm_days_threshold = cfg.max_days * cfg.warm_threshold_ratio
 
     # ACTIVE -> WARM
     if slot.current_state == LifecycleState.ACTIVE and not slot.warm_logged:
+        # Tage Berechnung seit Start des Pseudonyms
+        days = ((timestamp - slot.pseudonym_start_time).days if slot.pseudonym_start_time is not None else 0)
         # Wenn der Theshold erreicht ist wird:
-        if slot.page_visits >= warm_event_threshold or len(slot.cum_unique_domains) >= warm_domain_threshold:
+        if (slot.page_visits >= warm_event_threshold or len(slot.cum_unique_domains) >= warm_domain_threshold or days >= warm_days_threshold):
             # der Slot auf WARM gesetzt.
             slot.current_state = LifecycleState.WARM
             # der Slot auf WARM gelogged.
@@ -94,6 +97,7 @@ def close_segment(slot: SlotState) -> None:
 
 def reset_pseudonym(slot: SlotState) -> None:
     """Löscht den Pseudonym-Zustand --> Kompletter Reset."""
+    slot.current_state = LifecycleState.RESET
     slot.cum_unique_domains = set()
     slot.pseudonym_start_time = None
     slot.warm_logged = False
