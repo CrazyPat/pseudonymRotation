@@ -55,6 +55,9 @@ class UserSimulation:
             overshoot = max(0, slot.page_visits - self.cfg.max_events)
         elif trigger_detail == "Domains":
             overshoot = max(0, len(slot.cum_unique_domains) - self.cfg.max_domains)
+        elif trigger_detail == "Days":
+            elapsed_days = (close_time - slot.pseudonym_start_time).days
+            overshoot = max(0, elapsed_days - self.cfg.max_days)
             
         # Speichert den Datensatz ab für spätere Auswertungen.
         self.segment_records.append({
@@ -90,7 +93,9 @@ class UserSimulation:
         # Holt sich das passende Slot-Objekt
         slot = self.slots[slot_id]
 
-        if slot.pseudonym_start_time is not None and (timestamp - slot.pseudonym_start_time).days >= self.cfg.max_days:
+        new_domain = self.global_last_domain is None or domain != self.global_last_domain
+
+        if new_domain and slot.pseudonym_start_time is not None and (timestamp - slot.pseudonym_start_time).days >= self.cfg.max_days:
             self._close_slot_segment(slot_id, reason="rotation_threshold", close_time=slot.last_event_time, trigger_detail="Days")
             slot_id = self.assigner.assign_domain(pseudonym)
             slot = self.slots[slot_id]

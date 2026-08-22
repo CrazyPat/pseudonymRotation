@@ -37,9 +37,9 @@ def main(use_parallel: bool = True, verbose: bool = True):
     grouped_users = list(df.groupby("panelist_id", sort=False))
     total_users = len(grouped_users)
 
-    slot_configs = [20, 60, 150]
+    slot_configs =  [150, 250, 400, 600] # [20, 60, 150]
     domain_configs = [10, 20]
-    event_configs = [20, 50, 100]
+    event_configs = [100, 400, 800, 2000] # [20, 50, 100]
     day_configs = [7, 14]
     
     param_combinations = list(itertools.product(slot_configs, domain_configs, event_configs, day_configs))
@@ -76,7 +76,7 @@ def main(use_parallel: bool = True, verbose: bool = True):
         all_segment_records = []
 
         if use_parallel:
-            with concurrent.futures.ProcessPoolExecutor() as executor:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=7) as executor:
                 futures = [executor.submit(simulate_user_chunk, chunk) for chunk in user_chunks]
                 for future in concurrent.futures.as_completed(futures):
                     annotated_df, segment_records = future.result()
