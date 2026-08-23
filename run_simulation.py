@@ -37,9 +37,13 @@ def main(use_parallel: bool = True, verbose: bool = True):
     grouped_users = list(df.groupby("panelist_id", sort=False))
     total_users = len(grouped_users)
 
-    slot_configs =  [150, 250, 400, 600] # [20, 60, 150]
-    domain_configs = [10, 20]
-    event_configs = [100, 400, 800, 2000] # [20, 50, 100]
+    # slot_configs = [20, 60, 400, 600]
+    # event_configs = [20, 50, 100, 2000]
+    # slot_configs = [100, 125, 150, 175, 200, 225, 250]
+    # event_configs = [500, 600, 700, 800, 900, 1000]
+    slot_configs = [100]
+    event_configs = [2000, 3000]
+    domain_configs = [10]
     day_configs = [7, 14]
     
     param_combinations = list(itertools.product(slot_configs, domain_configs, event_configs, day_configs))

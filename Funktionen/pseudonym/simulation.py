@@ -88,35 +88,27 @@ class UserSimulation:
         """Verarbeitet jede Domain und prüft ob Rotation notwendig ist."""
         # Checkt, in welchen Slot die Domain gehört
         pseudonym = self.assigner._hash_domain(domain)
-        # Slot zuweisung basierend auf dem Pseudonym
-        slot_id = self.assigner.assign_domain(pseudonym)
-        # Holt sich das passende Slot-Objekt
-        slot = self.slots[slot_id]
-
-        new_domain = self.global_last_domain is None or domain != self.global_last_domain
-
-        if new_domain and slot.pseudonym_start_time is not None and (timestamp - slot.pseudonym_start_time).days >= self.cfg.max_days:
-            self._close_slot_segment(slot_id, reason="rotation_threshold", close_time=slot.last_event_time, trigger_detail="Days")
-            slot_id = self.assigner.assign_domain(pseudonym)
-            slot = self.slots[slot_id]
-
-        # Speichert das aktuelle Segment für den Return
-        current_segment = slot.segment_index
-
+        # Prüfe zuerst die vorherige Domain
         if self.global_last_domain is not None and domain != self.global_last_domain:
             prev_pseudo = self.assigner._hash_domain(self.global_last_domain)
             prev_slot_id = self.assigner.assign_domain(prev_pseudo)
             prev_slot = self.slots[prev_slot_id]
-            
             # Prüfen ob Schwellenwert erreicht wurde
             reason_detail = threshold_reached(prev_slot, self.cfg, timestamp)
             if reason_detail is not None:
                 # reason = "rotation_threshold" und trigger_detail"Events", "Domains" oder "Days"
                 self._close_slot_segment(prev_slot_id, reason="rotation_threshold", close_time=prev_slot.last_event_time, trigger_detail=reason_detail)
-                if prev_slot_id == slot_id:
-                    slot_id = self.assigner.assign_domain(pseudonym)
-                    slot = self.slots[slot_id]
-                    current_segment = slot.segment_index
+
+        new_domain = self.global_last_domain is None or domain != self.global_last_domain
+        slot_id = self.assigner.assign_domain(pseudonym)
+        # Holt sich das passende Slot-Objekt
+        slot = self.slots[slot_id]
+        if new_domain and slot.pseudonym_start_time is not None and (timestamp - slot.pseudonym_start_time).days >= self.cfg.max_days:
+            self._close_slot_segment(slot_id, reason="rotation_threshold", close_time=slot.last_event_time, trigger_detail="Days")
+            slot_id = self.assigner.assign_domain(pseudonym)
+            slot = self.slots[slot_id]
+        # Speichert das aktuelle Segment für den Return
+        current_segment = slot.segment_index
 
         self.global_last_domain = domain
 
