@@ -18,6 +18,7 @@ from pathlib import Path
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from sklearn.feature_extraction.text import TfidfTransformer
 
 
 def linkage_metrics(df_segments) -> dict: 
@@ -33,7 +34,9 @@ def linkage_metrics(df_segments) -> dict:
     # Speichert als sparse damit nicht zu groß wird.
     vectorizer = DictVectorizer(sparse=True)
     # Alle 
-    X = vectorizer.fit_transform(df_segments['domain_counter'].tolist())
+    x_counts = vectorizer.fit_transform(df_segments['domain_counter'].tolist())
+    tfidf = TfidfTransformer(sublinear_tf=True)
+    X = tfidf.fit_transform(x_counts)
     user_ids = df_segments['user_id'].values
 
     # Nutzer, die in Config nur 1 Segment haben

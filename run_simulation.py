@@ -41,8 +41,11 @@ def main(use_parallel: bool = True, verbose: bool = True):
     # event_configs = [20, 50, 100, 2000]
     # slot_configs = [100, 125, 150, 175, 200, 225, 250]
     # event_configs = [500, 600, 700, 800, 900, 1000]
-    slot_configs = [100]
-    event_configs = [2000, 3000]
+    # slot_configs = [100]
+    # event_configs = [2000, 3000]
+    slot_configs = [175, 250]
+    event_configs = [700, 1000]
+    
     domain_configs = [10]
     day_configs = [7, 14]
     
