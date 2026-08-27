@@ -43,11 +43,10 @@ def main(use_parallel: bool = True, verbose: bool = True):
     # event_configs = [500, 600, 700, 800, 900, 1000]
     # slot_configs = [100]
     # event_configs = [2000, 3000]
-    slot_configs = [175, 250]
-    event_configs = [700, 1000]
-    
+    slot_configs = [200, 205, 210, 215, 220, 225, 230, 235, 240, 245, 250, 400, 600]
+    event_configs = [500,600, 700, 800, 900, 1000]
     domain_configs = [10]
-    day_configs = [7, 14]
+    day_configs = [7,14]
     
     param_combinations = list(itertools.product(slot_configs, domain_configs, event_configs, day_configs))
     total_combinations = len(param_combinations)
@@ -66,14 +65,7 @@ def main(use_parallel: bool = True, verbose: bool = True):
 
         print(f"\n[{datetime.now().strftime('%H:%M:%S')}] [{idx}/{total_combinations}] Simuliere: Slots={slots}, Domains={domains}, Events={events}, Days={days}")
         
-        cfg = PipelineConfig(
-            num_slots=slots, 
-            max_domains=domains, 
-            max_events=events, 
-            max_days=days, 
-            use_tracker_mapping=False
-        )
-
+        cfg = PipelineConfig(num_slots=slots, max_domains=domains, max_events=events, max_days=days, use_tracker_mapping=False)
         user_chunks = [
             (uid, index, total_users, user_df, cfg, verbose) 
             for index, (uid, user_df) in enumerate(grouped_users, start=1)
