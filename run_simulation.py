@@ -25,7 +25,7 @@ def simulate_user_chunk(chunk_args):
 
 def main(use_parallel: bool = True, verbose: bool = True):
     data_path = Path("Data/datensatz/browsing_clean.csv")
-    out_dir = Path("Data/ergebnisse/raw_sweeps")
+    out_dir = Path("Data/ergebnisse/raw_sweeps_mit_days")
     out_dir.mkdir(parents=True, exist_ok=True)
     
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Lade Basis-Daten...")
@@ -37,16 +37,16 @@ def main(use_parallel: bool = True, verbose: bool = True):
     grouped_users = list(df.groupby("panelist_id", sort=False))
     total_users = len(grouped_users)
 
-    # slot_configs = [20, 60, 400, 600]
-    # event_configs = [20, 50, 100, 2000]
-    # slot_configs = [100, 125, 150, 175, 200, 225, 250]
-    # event_configs = [500, 600, 700, 800, 900, 1000]
+    domain_configs = [10]
+    slot_configs = [100, 225, 400]
+    event_configs = [700, 1000]
+    day_configs = [7, 14, 21, 31]
     # slot_configs = [100]
     # event_configs = [2000, 3000]
-    slot_configs = [200, 205, 210, 215, 220, 225, 230, 235, 240, 245, 250, 400, 600]
-    event_configs = [500,600, 700, 800, 900, 1000]
-    domain_configs = [10]
-    day_configs = [7,14]
+    #slot_configs = [225]
+    #domain_configs = [10]
+    #event_configs = [700, 1000]
+    #day_configs = [21, 31]
     
     param_combinations = list(itertools.product(slot_configs, domain_configs, event_configs, day_configs))
     total_combinations = len(param_combinations)

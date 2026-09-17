@@ -20,7 +20,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from sklearn.feature_extraction.text import TfidfTransformer
 
-
+    
 def linkage_metrics(df_segments) -> dict: 
     """Berechnet die Verkettungs-Metriken für ein df."""
     # Indexierung fixen. Später für incl und excl wichtig, weil sonst Lücken bleiben.
@@ -44,7 +44,10 @@ def linkage_metrics(df_segments) -> dict:
     # Für Auswertung wie viele Nutzer nur 1 Segment haben.
     share_single_segment_users = float((segments_per_user < 2).mean())
 
-    own_sims, other_sims, attacker_success_count = [], [], 0
+    own_sims = np.zeros(n_segments)
+    other_sims = np.zeros(n_segments)
+    attacker_success_count = 0
+    
     # Chunk-Größe dynamisch anpassen, damit es nicht zu groß wird und crasht.
     target_bytes = 1_000_000_000
     chunk_size = max(1, min(10000, target_bytes // (n_segments * 8)))
@@ -55,33 +58,39 @@ def linkage_metrics(df_segments) -> dict:
         end_idx = min(start_idx + chunk_size, n_segments)
         # Kosinus-Ähnlichkeit von chunks wird verglichen mit allen Segementen (NUR domain_counter). Gibt aus ob gleich oder nicht.
         sim_chunk = cosine_similarity(X[start_idx:end_idx], X)
-        # i lokaler index für chunks und row_idx globaler index für alle Segmente.
-        for i, row_idx in enumerate(range(start_idx, end_idx)):
-            current_user = user_ids[row_idx]
-            sims = sim_chunk[i]
-            # Holt eigenes Segment und setzt es auf false damit es sich nicht mit sich selber verlgleicht.
-            own_mask = (user_ids == current_user); own_mask[row_idx] = False
-            # Alle Segmente von anderen Nutzern.
-            other_mask = (user_ids != current_user)
-            # Eigener Höchster Wert.
-            max_own = np.max(sims[own_mask]) if np.any(own_mask) else 0.0
-            # Höchster Wert für andere Nutzer.
-            max_other = np.max(sims[other_mask]) if np.any(other_mask) else 0.0
-            # Werte für spätere Distanzauswertung.
-            own_sims.append(max_own); other_sims.append(max_other)
-            # Wenn eigener Wert größer dann ist der Angriff erfolgreich.
-            if max_own > max_other and max_own > 0:
-                attacker_success_count += 1
-        # Damit Arbeitsspeicher nicht zu groß wird.
-        del sim_chunk
 
-    own_sims = np.array(own_sims)
+        chunk_users = user_ids[start_idx:end_idx]
+        
+        # Numpy Broadcasting: Matrix-Masken für den ganzen Chunk aufbauen
+        own_mask = (chunk_users[:, None] == user_ids)
+        other_mask = (chunk_users[:, None] != user_ids)
+        
+        # Sich selbst ausschließen (Diagonale der Chunk-Sicht auf False setzen)
+        local_idx = np.arange(end_idx - start_idx)
+        global_idx = np.arange(start_idx, end_idx)
+        own_mask[local_idx, global_idx] = False
+        
+        # Eigener und fremder Höchster Wert vektoriell für jedes einzelne Segment im Chunk berechnen.
+        max_own = np.max(sim_chunk, axis=1, where=own_mask, initial=0.0)
+        max_other = np.max(sim_chunk, axis=1, where=other_mask, initial=0.0)
+        
+        # Werte für spätere Distanzauswertung in Arrays schreiben.
+        own_sims[start_idx:end_idx] = max_own
+        other_sims[start_idx:end_idx] = max_other
+        
+        # Wenn eigener Wert größer dann ist der Angriff erfolgreich.
+        success_mask = (max_own > max_other) & (max_own > 0)
+        attacker_success_count += np.sum(success_mask)
+        
+        # Damit Arbeitsspeicher nicht zu groß wird.
+        del sim_chunk, own_mask, other_mask
+
     # Chord-Distanz berechnen. Wie weit die Segmente auseinander liegen.
     chord = np.sqrt(np.maximum(0, 2 - 2 * own_sims))
     return {
         "Avg_Chord_Distance": np.mean(chord),
         "Avg_Max_Cosine_Own": np.mean(own_sims),
-        "Avg_Max_Cosine_Other": np.mean(np.array(other_sims)),
+        "Avg_Max_Cosine_Other": np.mean(other_sims),
         "Identification_Rate": attacker_success_count / n_segments,
         "Valid_Segments": n_segments,
         "Share_Single_Segment_Users": share_single_segment_users,
@@ -123,10 +132,10 @@ def process_single_file(seg_file):
 
 
 def verkettung():
-    sweep_dir = Path("Data/ergebnisse/raw_sweeps")
+    sweep_dir = Path("Data/ergebnisse/raw_sweeps_mit_days")
     out_dir = Path("Data/ergebnisse")
     out_dir.mkdir(parents=True, exist_ok=True)
-    output_file = out_dir / "verkettungs_ranking.csv"
+    output_file = out_dir / "verkettungs_ranking_mit_days.csv"
     # Schon fertige confs
     results = []
     # Bereits verarbeitete Konfigs

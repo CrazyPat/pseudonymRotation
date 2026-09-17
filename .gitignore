@@ -9,10 +9,13 @@ daten_mapping.py
 trackerOLD.py
 Data/datensatz/whotracksme/
 tests
-test
+testxs
 test/
 
-
+Auswertungen
+varianceCheckSimulation.py
+varianceCheckVerkettung.py
+variance_check/
 
 __pycache__
 __pycache__/

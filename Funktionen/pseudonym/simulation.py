@@ -23,7 +23,7 @@ from .zuweisung import SlotAssigner
 
 
 class UserSimulation:
-    def __init__(self, user_id: str, cfg: PipelineConfig, verbose: bool = False) -> None:
+    def __init__(self, user_id: str, cfg: PipelineConfig, verbose: bool = False, run_seed: int = 0) -> None:
         self.user_id = user_id
         self.cfg = cfg
         # Slots aus Lifecycle werden initialisiert mit der Anzahl aus der config
@@ -32,7 +32,7 @@ class UserSimulation:
         self.segment_records: List[dict] = []
         self.verbose = verbose
         # Seedgenerator für die Slot-Zuweisung. Jeder Nutzer bekommt sein eigenes Secret.
-        seed_str = hashlib.sha256(str(user_id).encode("utf-8")).hexdigest()
+        seed_str = hashlib.sha256(f"{user_id}_{run_seed}".encode("utf-8")).hexdigest()
         self.rng = np.random.default_rng(int(seed_str[:8], 16))
         local_secret = SlotAssigner.gen_local_secret(user_id)
         # Zuweisungslogik aus zuweisung.py
@@ -97,14 +97,14 @@ class UserSimulation:
             reason_detail = threshold_reached(prev_slot, self.cfg, timestamp)
             if reason_detail is not None:
                 # reason = "rotation_threshold" und trigger_detail"Events", "Domains" oder "Days"
-                self._close_slot_segment(prev_slot_id, reason="rotation_threshold", close_time=prev_slot.last_event_time, trigger_detail=reason_detail)
+                self._close_slot_segment(prev_slot_id, reason="rotation_threshold", close_time=timestamp, trigger_detail=reason_detail)
 
         new_domain = self.global_last_domain is None or domain != self.global_last_domain
         slot_id = self.assigner.assign_domain(pseudonym)
         # Holt sich das passende Slot-Objekt
         slot = self.slots[slot_id]
         if new_domain and slot.pseudonym_start_time is not None and (timestamp - slot.pseudonym_start_time).days >= self.cfg.max_days:
-            self._close_slot_segment(slot_id, reason="rotation_threshold", close_time=slot.last_event_time, trigger_detail="Days")
+            self._close_slot_segment(slot_id, reason="rotation_threshold", close_time=timestamp, trigger_detail="Days")
             slot_id = self.assigner.assign_domain(pseudonym)
             slot = self.slots[slot_id]
         # Speichert das aktuelle Segment für den Return
