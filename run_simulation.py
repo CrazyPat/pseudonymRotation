@@ -38,143 +38,125 @@ def main(use_parallel: bool = True, verbose: bool = True):
     total_users = len(grouped_users)
 
     # Jeder Block ist ein Durchlauf. Die Konfigurationen wurden zur besseren Strukturierung und gezielten Auswertung auf mehrere durchläufe verteilt.
-    #36 kombinationen
+    # 36 Kombinationen
     domain_configs = [3, 5]
     slot_configs = [25, 50, 100]
     event_configs = [25, 100, 250]
     day_configs = [7, 14]
 
-    #4 kombinationen
+    # 4 Kombinationen
     #domain_configs = [10]
     #slot_configs = [10, 50]
     #event_configs = [700]
     #day_configs = [7, 14]
 
-    #8 kombinationen
+    # 8 Kombinationen
     #domain_configs = [3]
     #slot_configs = [5]
     #event_configs = [200, 500, 600, 700]
     #day_configs = [7, 14]
 
-    #12 kombinationen
-    #domain_configs = [3, 10, 15]
-    #slot_configs = [200, 250]
-    #event_configs = [700, 1000]
-    #day_configs = [7]
-
-    #4 kombinationen
-    #domain_configs = [3, 15]
-    #slot_configs = [225]
-    #event_configs = [700, 1000]
-    #day_configs = [7]
-
-    #4 kombinationen
-    #domain_configs = [10]
-    #slot_configs = [100, 400]
-    #event_configs = [700, 1000]
-    #day_configs = [7]
-
-    # 4 kombinationen
-    #domain_configs = [10]
-    #slot_configs = [225]
-    #event_configs = [100, 250, 700, 1000]
-    #day_configs = [7]
-
-    # 2 kombinationen
+    # 2 Kombinationen
     #domain_configs = [30]
     #slot_configs = [225]
     #event_configs = [700]
     #day_configs = [7, 14]
 
-    # 60 kombinationen
+    # 18 Kombinationen
+    #domain_configs = [3, 10, 15]
+    #slot_configs = [200, 225, 250]
+    #event_configs = [700, 1000]
+    #day_configs = [7]
+
+    # 4 Kombinationen
     #domain_configs = [10]
-    #slot_configs = [200, 205, 210, 215, 220, 230, 235, 240, 245, 250]
+    #slot_configs = [100, 400]
+    #event_configs = [700, 1000]
+    #day_configs = [7]
+
+    # 4 Kombinationen
+    #domain_configs = [10]
+    #slot_configs = [225]
+    #event_configs = [100, 250]
+    #day_configs = [7, 14]
+
+    # 66 Kombinationen
+    #domain_configs = [10]
+    #slot_configs = [200, 205, 210, 215, 220, 225, 230, 235, 240, 245, 250]
     #event_configs = [500, 600, 700, 800, 900, 1000]
     #day_configs = [14]
 
-    # 8 kombinationen
-    #domain_configs = [3, 15]
-    #slot_configs = [200, 250]
-    #event_configs = [700, 1000]
-    #day_configs = [14]
-
-    # 2 kombinationen
-    #domain_configs = [15]
-    #slot_configs = [225]
-    #event_configs = [700, 1000]
-    #day_configs = [14]
-
-    # 21 kombinationen
+    # 21 Kombinationen
     #domain_configs = [10]
     #slot_configs = [100, 400, 600]
     #event_configs = [500, 700, 1000, 1250, 1500, 1750, 2000]
     #day_configs = [14]
 
-    # 12 kombinationen
+    # 4 Kombinationen
     #domain_configs = [10]
     #slot_configs = [225]
-    #event_configs = [100, 250, 500, 600, 700, 800, 900, 1000, 1250, 1500, 1750, 2000]
+    #event_configs = [1250, 1500, 1750, 2000]
     #day_configs = [14]
 
-    # 8 kombinationen
+    # 8 Kombinationen
+    #domain_configs = [3, 15]
+    #slot_configs = [200, 250]
+    #event_configs = [700, 1000]
+    #day_configs = [14]
+
+    # 2 Kombinationen
+    #domain_configs = [15]
+    #slot_configs = [225]
+    #event_configs = [700, 1000]
+    #day_configs = [14]
+
+    # 32 Kombinationen
+    #domain_configs = [3, 20]
+    #slot_configs = [100, 225, 400, 600]
+    #event_configs = [500, 700, 1000, 2000]
+    #day_configs = [14]
+
+    # 12 Kombinationen
     #domain_configs = [10]
-    #slot_configs = [225, 400]
+    #slot_configs = [100, 225, 400]
     #event_configs = [700, 1000]
     #day_configs = [21, 31]
 
-    # 2 kombinationen
-    #domain_configs = [10]
-    #slot_configs = [100]
-    #event_configs = [700, 1000]
-    #day_configs = [21]
+    # 50 Kombinationen
+    #domain_configs = [2, 3, 5, 7, 10]
+    #slot_configs = [3, 5, 10, 15, 25]
+    #event_configs = [25, 50]
+    #day_configs = [31]
 
-    # 100 Konbinationen
+    # 60 Kombinationen
     #domain_configs = [2, 3, 5, 7, 10]
     #slot_configs = [3, 5, 15, 25]
-    #event_configs = [25, 50, 100, 250, 500]
+    #event_configs = [100, 250, 500]
     #day_configs = [31]
 
-    # 35 kombinationen
-    #domain_configs = [2, 3, 5, 7, 10]
-    #slot_configs = [10]
-    #event_configs = [25, 50, 100, 250, 500, 750, 1000]
-    #day_configs = [31]
-
-    # 20 kombinationen
-    #domain_configs = [15, 20, 30, 50]
-    #slot_configs = [10]
-    #event_configs = [100, 250, 500, 750, 1000]
-    #day_configs = [31]
-
-    # 45 kombinationen
+    # 90 Kombinationen
     #domain_configs = [2, 3, 5, 7, 10, 15, 20, 30, 50]
-    #slot_configs = [50]
+    #slot_configs = [10, 50]
     #event_configs = [100, 250, 500, 750, 1000]
     #day_configs = [31]
 
-    # 20 kombinationen
+    # 20 Kombinationen
     #domain_configs = [2, 3, 5, 7]
     #slot_configs = [100]
     #event_configs = [100, 250, 500, 750, 1000]
     #day_configs = [31]
 
-    # 6 kombinationen
+    # 4 Kombinationen
     #domain_configs = [10]
     #slot_configs = [100]
-    #event_configs = [100, 250, 500, 700, 750, 1000]
+    #event_configs = [100, 250, 500, 750]
     #day_configs = [31]
 
-    # 2 kombinationen
+    # 2 Kombinationen
     #domain_configs = [30]
     #slot_configs = [150]
     #event_configs = [250, 500]
     #day_configs = [31]
-
-    # 32 kombinationen
-    #domain_configs = [3, 20]
-    #slot_configs = [100, 225, 400, 600]
-    #event_configs = [500, 700, 1000, 2000]
-    #day_configs = [14]
     
     # = 447 parameter
     
