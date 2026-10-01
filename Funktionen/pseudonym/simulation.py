@@ -50,6 +50,7 @@ class UserSimulation:
         if reason == "rotation_threshold":
             slot.current_state = LifecycleState.SATURATED
         
+        # Zeigt overshoot nach einem rotation-lock für jeden schwellenwert
         overshoot = 0
         if trigger_detail == "Events":
             overshoot = max(0, slot.page_visits - self.cfg.max_events)

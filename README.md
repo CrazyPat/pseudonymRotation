@@ -11,9 +11,15 @@ Inhalt ist die Python-Simulations- und Evaluationspipeline für die Bachelorarbe
 │   ├── datensatz                            # Alle relevanten Datensätze
 │   │   ├── browsing.csv                     # Raw Zenodo-Datensatz: https://zenodo.org/records/4757574
 │   │   ├── browsing_clean.csv               # Aufgeräumter Zenodo-Datensatz
-│   │   ├── domain_tracker_mapping.json      # Zurodnung aller Domains zu Trackern basierend auf dem WhoTracks.Me-Datensatz
+│   │   ├── domain_tracker_mapping.json      # Verworfener Ansatz: Zurodnung aller Domains zu Trackern basierend auf dem WhoTracks.Me-Datensatz
 │   ├── ergebnisse                           # Ergebnisse
-│   │   ├── simulation.output.csv            # Ergebnis der Simulation
+│   │   ├── raw_sweeps                       # Speichert Simulationsergebnisse von jeder Konfiguration
+│   │   │   ├── parameter_events.csv         # Jedes Event einer Konfiguration
+│   │   │   ├── parameter_segments.csv       # Jedes Segment einer Konfiguration
+│   │   ├── verkettungs_ranking.csv          # Ergebnisse der Verkettung für den kompletten Sweep
+│   │   ├── sweep_trigger_analyse.csv        # Abschlussgründe für eine Konfiguration
+│   │   ├── variance_check_ranking.csv       # Ergebnis des Variance_Checks
+│   │   ├── variance_check_summary.csv       # Zusammenfassung des Variance_Checks
 ├── Funktionen/                              # Python-Paket der Simulationspipeline
 │   ├── daten/                               # Browsing.csv und WhoTracks.Me Datensatz Download
 │   │   ├── __init__.py                      # init
@@ -27,6 +33,10 @@ Inhalt ist die Python-Simulations- und Evaluationspipeline für die Bachelorarbe
 │   └── utils.py                             # Logging-Funktion
 ├── preprocessing.py                         # Download und Vorverarbeitung des Datensatzes
 ├── run_simulation.py                        # Hauptskript
+├── verkettung.py                            # Berechnet Verkettungsmetriken
+├── varianceCheckSimulation.py               # Variiert Slotzuweisung für die Gesamte Simulation 20 mal durch
+├── varianceCheckVerkettung.py               # Rechnet Verkettung für die Variierte Simulation aus
+├── reason_analysis.py                       # Erstellt die Abschlussgründe aus allen Konfigurationen
 ├── requirements.txt                         # Projekt-Abhängigkeiten
 └── README.md                                # Projektdokumentation
 ```
@@ -50,21 +60,52 @@ pip install -r requirements.txt
 
 ## Ausführung der Pipeline
 
-### Daten laden und Mapping erstellen
+### Daten laden
 Vor dem Ausführen der eigentlichen Simulation muss der Datensatz bereinigt und initialisiert werden:
 
 ```bash
 python preprocessing.py
 ```
+Das Ergebnis wird in `browsing_clean.csv` gespeichert.
 
 ### Simulation starten
-
+Damit der Simulationsdurchlauf starten kann muss ein Parameter-Sweep in der run_simulation.py angegeben werden, sonst wird die empfohlene Konfiguration durchlaufen.
 
 ```bash
 python run_simulation.py
 ```
 
+Die vollständig durchlaufenden Segmente und Events werden in `Data/ergebnisse/raw_sweeps/` gespeichert.
 ---
+### Verkettung berechnen
+Nach dem Sweep werden die Verkettungsmetriken (Kosinus-Ähnlichkeit, Chord-Distance, Identification-Rate) aus den Segment-Dateien berechnet:
+
+\```bash
+python verkettung.py
+\```
+
+Das Ergebnis wird in `verkettungs_ranking.csv` gespeichert.
+
+### Abschlussgründe analysieren
+Fasst die Trigger-Verteilung für jede Konfiguration zusammen:
+
+\```bash
+python reason_analysis.py
+\```
+
+Das Ergebnis wird in `sweep_trigger_analyse.csv` gespeichert.
+
+### Varianz-Check der Slot-Zuweisung
+Die Erstzuweisung der Domains zu Slots passiert zufällig, deshalb prüft der Varianz-Check, wie stark die Angriffsraten von der gewählten Slotanzahl schwanken. Dafür wird dieselbe Konfiguration mit mehreren Seeds wiederholt simuliert:
+
+\```bash
+python varianceCheckSimulation.py
+python varianceCheckVerkettung.py
+\```
+
+Die vollständig durchlaufenden Segmente und Events werden in `Data/ergebnisse/variance_check` gespeichert.
+Das vollständige Ergebnis wird in `variance_check_ranking.csv` gespeichert.
+Das zusammenfassende Ergebnis wird in `variance_check_summary.csv` gespeichert.
 
 ## Architektur
 
