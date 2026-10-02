@@ -9,9 +9,9 @@ from datetime import datetime
 
 def simulate_user_chunk(chunk_args):
     """Führt die Simulation für einen einzelnen Nutzer in einem separaten Prozess aus."""
-    user_id, index, total_users, user_df, cfg, verbose = chunk_args
+    user_id, index, total_users, user_df, cfg, verbose, observation_end = chunk_args
     sim = UserSimulation(user_id=user_id, cfg=cfg)
-    annotated_df = sim.run_user(user_df)
+    annotated_df = sim.run_user(user_df, observation_end)
     
     if verbose:
         progress_pct = (index / total_users) * 100
@@ -32,6 +32,7 @@ def main(use_parallel: bool = True, verbose: bool = True):
     df = pd.read_csv(data_path)
     df["used_at"] = pd.to_datetime(df["used_at"])
     df = df.sort_values(by=["panelist_id", "used_at"])
+    observation_end = df["used_at"].max()
 
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Gruppiere Nutzer...")
     grouped_users = list(df.groupby("panelist_id", sort=False))
@@ -61,6 +62,8 @@ def main(use_parallel: bool = True, verbose: bool = True):
          [100, 250, 500, 750, 1000], [31]),
         ([100], [2, 3, 5, 7], [100, 250, 500, 750, 1000], [31]),
         ([100], [10], [100, 250, 500, 750], [31]),
+        ([225], [5, 7], [700], [14]),
+        ([25, 150], [10], [700], [14]),
         ([150], [30], [250, 500], [31]),]
 
     param_combinations = []
@@ -86,7 +89,7 @@ def main(use_parallel: bool = True, verbose: bool = True):
         
         cfg = PipelineConfig(num_slots=slots, max_domains=domains, max_events=events, max_days=days, use_tracker_mapping=False)
         user_chunks = [
-            (uid, index, total_users, user_df, cfg, verbose) 
+            (uid, index, total_users, user_df, cfg, verbose, observation_end)
             for index, (uid, user_df) in enumerate(grouped_users, start=1)
         ]
         

@@ -66,7 +66,8 @@ class UserSimulation:
             "slot_id": slot_id,
             "segment_id": slot.segment_index,
             "start_time": slot.first_event_time,
-            "end_time": close_time,
+            "end_time": close_time, # rotation
+            "last_event_time": slot.last_event_time, #tatsächlich letztes event
             "page_visits": slot.page_visits,
             "unique_domains": len(slot.unique_domains),
             "trigger": reason,
@@ -138,13 +139,13 @@ class UserSimulation:
         return slot_id, current_segment
 
 
-    def finalize(self) -> None:
-        """Schließt alle Slots ab, die noch offen sind (z. B. ein Segment leer war)."""
+    def finalize(self, observation_end: pd.Timestamp) -> None:
+        """Schließt alle Slots am Beobachtungsende ab."""
         for slot_id, slot in self.slots.items():
-            # Setzt Endzeitstempel oder nimmt letzten Zeitstempel.
-            end_ts = slot.last_event_time or pd.Timestamp.now()
-            # Schließt Segment ab und speichert mit end of stream.
-            self._close_slot_segment(slot_id, "end_of_stream", end_ts)
+            # Schwelle schon erreicht --> wäre beim nächsten Besuch rotiert worden
+            detail = threshold_reached(slot, self.cfg, observation_end)
+            reason = "expired_at_end" if detail else "end_of_stream"
+            self._close_slot_segment(slot_id, reason, slot.last_event_time, trigger_detail=detail)
     
 
     def total_resets(self) -> int:
@@ -152,7 +153,7 @@ class UserSimulation:
         return sum(slot.reset_count for slot in self.slots.values())
 
 
-    def run_user(self, df_user: pd.DataFrame) -> pd.DataFrame:
+    def run_user(self, df_user: pd.DataFrame, observation_end) -> pd.DataFrame:
             results = []
             for row in df_user.itertuples(index=False):
                 slot_id, seg_id = self.process_event(row.domain, row.used_at)
@@ -163,5 +164,5 @@ class UserSimulation:
                     "slot_id": slot_id,
                     "segment_id": seg_id
                 })
-            self.finalize()
+            self.finalize(observation_end)
             return pd.DataFrame(results)
