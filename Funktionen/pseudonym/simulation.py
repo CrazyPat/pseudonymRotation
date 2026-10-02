@@ -141,11 +141,13 @@ class UserSimulation:
 
     def finalize(self, observation_end: pd.Timestamp) -> None:
         """Schließt alle Slots am Beobachtungsende ab."""
+        # Slot der letzten Domain kann durch den Rotation-Lock noch wachsen --> bleibt offen
+        last_slot = (self.assigner.domain_to_slot_map.get(self.assigner._hash_domain(self.global_last_domain))
+                    if self.global_last_domain is not None else None)
         for slot_id, slot in self.slots.items():
-            # Schwelle schon erreicht --> wäre beim nächsten Besuch rotiert worden
             detail = threshold_reached(slot, self.cfg, observation_end)
-            reason = "expired_at_end" if detail else "end_of_stream"
-            self._close_slot_segment(slot_id, reason, slot.last_event_time, trigger_detail=detail)
+            reason = "expired" if detail and slot_id != last_slot else "end_of_stream"
+            self._close_slot_segment(slot_id, reason, observation_end, trigger_detail=detail)
     
 
     def total_resets(self) -> int:
