@@ -43,7 +43,7 @@ class UserSimulation:
     def _close_slot_segment(self, slot_id: int, reason: str, close_time: pd.Timestamp, trigger_detail: str | None = None) -> None:
         """Datensammlung nach Abschluss eines Segments."""
         slot = self.slots[slot_id]
-        # Wird abgebrochen falls ein Segment keine Events hatte.
+        # Wird abgebrochen falls ein Segment keine Events hatte --> wird also vom angreifer nicht mit einbezogen!
         if slot.page_visits <= 0:
             return
         # Setzt das Pseudonym auf SATURATED.
@@ -101,13 +101,16 @@ class UserSimulation:
                 self._close_slot_segment(prev_slot_id, reason="rotation_threshold", close_time=timestamp, trigger_detail=reason_detail)
 
         new_domain = self.global_last_domain is None or domain != self.global_last_domain
-        slot_id = self.assigner.assign_domain(pseudonym)
-        # Holt sich das passende Slot-Objekt
-        slot = self.slots[slot_id]
-        if new_domain and slot.pseudonym_start_time is not None and (timestamp - slot.pseudonym_start_time).days >= self.cfg.max_days:
-            self._close_slot_segment(slot_id, reason="rotation_threshold", close_time=timestamp, trigger_detail="Days")
+        # Solange bis der slot nicht rotiert werden muss
+        while True:
             slot_id = self.assigner.assign_domain(pseudonym)
             slot = self.slots[slot_id]
+            # prüfen
+            reason_detail = threshold_reached(slot, self.cfg, timestamp)
+            if reason_detail is None or not new_domain:
+                break
+            # schließen wenn er ein reason_detail hat und von vorne
+            self._close_slot_segment(slot_id, reason="rotation_threshold", close_time=timestamp, trigger_detail=reason_detail,)
         # Speichert das aktuelle Segment für den Return
         current_segment = slot.segment_index
 

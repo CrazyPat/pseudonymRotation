@@ -36,131 +36,38 @@ def main(use_parallel: bool = True, verbose: bool = True):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Gruppiere Nutzer...")
     grouped_users = list(df.groupby("panelist_id", sort=False))
     total_users = len(grouped_users)
+    # Kompletter block für eine leichte ausführung. Das sind alle Kombinationen
+    sweep_blocks = [
+        ([25, 50, 100], [3, 5], [25, 100, 250], [7, 14]),
+        ([10, 50], [10], [700], [7, 14]),
+        ([5], [3], [200, 500, 600, 700], [7, 14]),
+        ([225], [30], [700], [7, 14]),
+        ([200, 225, 250], [3, 10, 15], [700, 1000], [7]),
+        ([100, 400], [10], [700, 1000], [7]),
+        ([225], [10], [100, 250], [7, 14]),
+        (list(range(200, 251, 5)), [10],
+         [500, 600, 700, 800, 900, 1000], [14]),
+        ([100, 400, 600], [10],
+         [500, 700, 1000, 1250, 1500, 1750, 2000], [14]),
+        ([225], [10], [1250, 1500, 1750, 2000], [14]),
+        ([200, 250], [3, 15], [700, 1000], [14]),
+        ([225], [15], [700, 1000], [14]),
+        ([100, 225, 400, 600], [3, 20],
+         [500, 700, 1000, 2000], [14]),
+        ([100, 225, 400], [10], [700, 1000], [21, 31]),
+        ([3, 5, 10, 15, 25], [2, 3, 5, 7, 10], [25, 50], [31]),
+        ([3, 5, 15, 25], [2, 3, 5, 7, 10], [100, 250, 500], [31]),
+        ([10, 50], [2, 3, 5, 7, 10, 15, 20, 30, 50],
+         [100, 250, 500, 750, 1000], [31]),
+        ([100], [2, 3, 5, 7], [100, 250, 500, 750, 1000], [31]),
+        ([100], [10], [100, 250, 500, 750], [31]),
+        ([150], [30], [250, 500], [31]),]
 
-    # Jeder Block ist ein Durchlauf. Die Konfigurationen wurden zur besseren Strukturierung und gezielten Auswertung auf mehrere durchläufe verteilt.
-    # 36 Kombinationen
-    domain_configs = [3, 5]
-    slot_configs = [25, 50, 100]
-    event_configs = [25, 100, 250]
-    day_configs = [7, 14]
+    param_combinations = []
 
-    # 4 Kombinationen
-    #domain_configs = [10]
-    #slot_configs = [10, 50]
-    #event_configs = [700]
-    #day_configs = [7, 14]
+    for slot_configs, domain_configs, event_configs, day_configs in sweep_blocks:
+        param_combinations.extend(itertools.product(slot_configs, domain_configs, event_configs, day_configs,))
 
-    # 8 Kombinationen
-    #domain_configs = [3]
-    #slot_configs = [5]
-    #event_configs = [200, 500, 600, 700]
-    #day_configs = [7, 14]
-
-    # 2 Kombinationen
-    #domain_configs = [30]
-    #slot_configs = [225]
-    #event_configs = [700]
-    #day_configs = [7, 14]
-
-    # 18 Kombinationen
-    #domain_configs = [3, 10, 15]
-    #slot_configs = [200, 225, 250]
-    #event_configs = [700, 1000]
-    #day_configs = [7]
-
-    # 4 Kombinationen
-    #domain_configs = [10]
-    #slot_configs = [100, 400]
-    #event_configs = [700, 1000]
-    #day_configs = [7]
-
-    # 4 Kombinationen
-    #domain_configs = [10]
-    #slot_configs = [225]
-    #event_configs = [100, 250]
-    #day_configs = [7, 14]
-
-    # 66 Kombinationen
-    #domain_configs = [10]
-    #slot_configs = [200, 205, 210, 215, 220, 225, 230, 235, 240, 245, 250]
-    #event_configs = [500, 600, 700, 800, 900, 1000]
-    #day_configs = [14]
-
-    # 21 Kombinationen
-    #domain_configs = [10]
-    #slot_configs = [100, 400, 600]
-    #event_configs = [500, 700, 1000, 1250, 1500, 1750, 2000]
-    #day_configs = [14]
-
-    # 4 Kombinationen
-    #domain_configs = [10]
-    #slot_configs = [225]
-    #event_configs = [1250, 1500, 1750, 2000]
-    #day_configs = [14]
-
-    # 8 Kombinationen
-    #domain_configs = [3, 15]
-    #slot_configs = [200, 250]
-    #event_configs = [700, 1000]
-    #day_configs = [14]
-
-    # 2 Kombinationen
-    #domain_configs = [15]
-    #slot_configs = [225]
-    #event_configs = [700, 1000]
-    #day_configs = [14]
-
-    # 32 Kombinationen
-    #domain_configs = [3, 20]
-    #slot_configs = [100, 225, 400, 600]
-    #event_configs = [500, 700, 1000, 2000]
-    #day_configs = [14]
-
-    # 12 Kombinationen
-    #domain_configs = [10]
-    #slot_configs = [100, 225, 400]
-    #event_configs = [700, 1000]
-    #day_configs = [21, 31]
-
-    # 50 Kombinationen
-    #domain_configs = [2, 3, 5, 7, 10]
-    #slot_configs = [3, 5, 10, 15, 25]
-    #event_configs = [25, 50]
-    #day_configs = [31]
-
-    # 60 Kombinationen
-    #domain_configs = [2, 3, 5, 7, 10]
-    #slot_configs = [3, 5, 15, 25]
-    #event_configs = [100, 250, 500]
-    #day_configs = [31]
-
-    # 90 Kombinationen
-    #domain_configs = [2, 3, 5, 7, 10, 15, 20, 30, 50]
-    #slot_configs = [10, 50]
-    #event_configs = [100, 250, 500, 750, 1000]
-    #day_configs = [31]
-
-    # 20 Kombinationen
-    #domain_configs = [2, 3, 5, 7]
-    #slot_configs = [100]
-    #event_configs = [100, 250, 500, 750, 1000]
-    #day_configs = [31]
-
-    # 4 Kombinationen
-    #domain_configs = [10]
-    #slot_configs = [100]
-    #event_configs = [100, 250, 500, 750]
-    #day_configs = [31]
-
-    # 2 Kombinationen
-    #domain_configs = [30]
-    #slot_configs = [150]
-    #event_configs = [250, 500]
-    #day_configs = [31]
-    
-    # = 447 parameter
-    
-    param_combinations = list(itertools.product(slot_configs, domain_configs, event_configs, day_configs))
     total_combinations = len(param_combinations)
     
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Starte Grid Search mit {total_combinations} Kombinationen.\n")
