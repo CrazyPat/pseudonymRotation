@@ -4,7 +4,6 @@ testD.py
 d.txt
 Auswertung/
 Auswertung
-Auswertung/paretoKneepoint.py
 daten_mapping.py
 trackerOLD.py
 Data/datensatz/whotracksme/
@@ -57,7 +56,6 @@ Data/ergebnisse_tracker_mapping/
 Data/ergebnisse_tracker_mapping
 
 days.py
-reason_analysis.py
 test.py
 Funktionen/data/dataset_check.py
 
