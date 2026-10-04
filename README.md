@@ -112,23 +112,25 @@ Das zusammenfassende Ergebnis wird in `variance_check_summary.csv` gespeichert.
 ### Die Simulation der Pseudonym-Rotation
 Die Simulation bildet einen Angriff eines globalen Trackers ab, der jeden Domain-Aufruf eines Nutzers erfasst.
 
-**Deterministische Slot-Zuweisung**
+**Slot-Zuweisung und Reproduzierbarkeit**
 
-Jeder Nutzer verfügt über $N$ parallele Slots. Die Zuweisung einer Domain zu einem Slot erfolgt über ein HMAC-SHA256-Verfahren mit einem Localen-Secret:
+Jeder Nutzer verfügt über $N$ parallele Slots. Eine Domain wird vor der Speicherung mit einem lokalen Secret per HMAC-SHA256 auf einen Schlüssel der Zuordnungstabelle abgebildet:
 
 $$k = \text{HMAC}(\text{LocalSecret}, \text{Domain})$$
 
-Dadurch landen Aufrufe derselben Domain immer im selben Slot, sofern das Mapping nicht durch eine vorherige Rotation gelöscht wurde.
+Der HMAC dient nur dazu, die Domains in der Tabelle nicht im Klartext zu speichern. Eine noch unbekannte Domain wird zufällig einem der $N$ Slots zugewiesen. Danach landen alle weiteren Aufrufe dieser Domain im selben Slot, bis dieser rotiert wird.
+
+Die Zuweisung ist derzeit deterministisch, damit jede Konfiguration exakt reproduziert werden kann. Das lokale Secret wird aus der Nutzer-ID abgeleitet und der Zufallsgenerator jedes Nutzers mit `SHA-256("{user_id}_{run_seed}")` initialisiert. Die Hauptauswertung verwendet `run_seed = 0`. Der Varianz-Check wiederholt die Simulation mit den Seeds 0 bis 19, wobei Seed 0 dem Hauptlauf entspricht. In einer realen Umsetzung wären Secret und Slotwahl echt zufällig.
 
 **Lifecycle und Rotation**
 
-Jeder Slot besitzt einen Zustandsautomaten (FRESH $\rightarrow$ ACTIVE $\rightarrow$ WARM $\rightarrow$ SATURATED). Die Rotation wird ausgelöst, sobald einer der folgenden Schwellenwerte erreicht ist:
+Jeder Slot durchläuft die Zustände FRESH → ACTIVE → WARM → SATURATED → RESET → FRESH. WARM wird gesetzt, sobald ein Wert 80 % seiner Schwelle erreicht. Ein Pseudonym rotiert, wenn bei einer Prüfung einer der folgenden Schwellenwerte erreicht ist:
 
-* **max_domains:** Maximale Anzahl an eindeutigen Domains.
+* **max_domains:** Maximale Anzahl an unterschiedlichen Domains.
 * **max_events:** Maximale Anzahl an Seitenaufrufen.
 * **max_days:** Maximales Alter des Pseudonyms in Tagen.
 
- #### Erreicht ein Slot seinen Threshold, wird der Status auf SATURATED gesetzt und die Rotation durchgeführt Bei einem Reset werden alle Zähler, Zeitstempel und Domain-Historien des Slots restlos gelöscht. Die Zuweisungen der betroffenen Domains werden aus der domain_to_slot_map entfernt. Beim nächsten Aufruf erhält die Domain eine komplett neue Zuweisung.
+Geprüft wird nur beim Wechsel auf eine andere Domain (Rotation-Lock), und zwar der Slot der verlassenen und der Slot der neuen Domain. Bei einer Rotation werden alle Zähler, Zeitstempel und Domain-Historien des Slots gelöscht und die Zuweisungen der betroffenen Domains aus der `domain_to_slot_map` entfernt. Beim nächsten Aufruf erhält die Domain eine neue Zuweisung.
 ---
 
 ## KI-Nutzung
