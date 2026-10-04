@@ -27,6 +27,9 @@ def simulate_user_chunk(chunk_args):
     return annotated_df, sim.segment_records
 
 def main(use_parallel: bool = True, verbose: bool = True, save_events: bool = True, save_segments: bool = True, direct_analysis: bool = False, keep_raw=None):
+    if not (save_events or save_segments or direct_analysis):
+        print("Nichts zu tun: save_events, save_segments oder direct_analysis muss True sein.")
+        return
     data_path = Path("Data/datensatz/browsing_clean.csv")
     out_dir = Path("Data/ergebnisse/raw_sweeps")
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -86,6 +89,10 @@ def main(use_parallel: bool = True, verbose: bool = True, save_events: bool = Tr
     
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Starte Grid Search mit {total_combinations} Kombinationen.\n")
 
+    # Falls wirklich keine logs gespeichert werden sollen dann werden diese hier seperat dazugespeichert. Wichtig für auswertung.! Wird außer im code geändert immer gespeichert
+    if keep_raw is None:
+        keep_raw = [(s, 10, 700, 7) for s in [10, 25, 50, 100, 225, 600]]
+
     # Direkte Auswertung um speicher zu sparen werden sie direkt geschrieben
     linkage_path = Path("Data/ergebnisse/verkettungs_ranking_direkt.csv")
     trigger_path = Path("Data/ergebnisse/sweep_trigger_analyse_direkt.csv")
@@ -130,30 +137,31 @@ def main(use_parallel: bool = True, verbose: bool = True, save_events: bool = Tr
                 futures = [executor.submit(simulate_user_chunk, chunk) for chunk in user_chunks]
                 for future in concurrent.futures.as_completed(futures):
                     annotated_df, segment_records = future.result()
-                    all_annotated_rows.append(annotated_df)
+                    # events nur sammeln, wenn sie auch gespeichert werden
+                    if write_events:
+                        all_annotated_rows.append(annotated_df)
                     all_segment_records.extend(segment_records)
         else:
             for chunk in user_chunks:
                 annotated_df, segment_records = simulate_user_chunk(chunk)
-                all_annotated_rows.append(annotated_df)
+                if write_events:
+                    all_annotated_rows.append(annotated_df)
                 all_segment_records.extend(segment_records)
 
         # In Ordner speichern wenn sie schon berechnet sind
-        if save_events:
+        if write_events:
             final_df = pd.concat(all_annotated_rows, ignore_index=True)
             final_df.to_csv(events_out_path, index=False)
 
         segments_df = pd.DataFrame(all_segment_records)
-        if save_segments:
+        if write_segments:
             segments_df.to_csv(segments_out_path, index=False)
-        # Falls wirklich keine logs gespeichert werden sollen dann werden diese hier seperat dazugespeichert. Wichtig für auswertung.! Wird außer im code geändert immer gespeichert
-        if keep_raw is None:
-            keep_raw = [(s, 10, 700, 7) for s in [10, 25, 50, 100, 225, 600]]
         # Direkte auswertung
         if direct_analysis and not segments_df.empty:
             if key not in trigger_done:
                 trigger_rows.append(summarize_segments(segments_df, slots, domains, events, days))
                 pd.DataFrame(trigger_rows).to_csv(trigger_path, index=False)
+                trigger_done.add(key)
 
             if key not in linkage_done:
                 seg_df = segments_df.copy()
@@ -167,6 +175,7 @@ def main(use_parallel: bool = True, verbose: bool = True, save_events: bool = Tr
                     if m_excl: row.update({f"Excl_{k}": v for k, v in m_excl.items()})
                 linkage_rows.append(row)
                 pd.DataFrame(linkage_rows).to_csv(linkage_path, index=False)
+                linkage_done.add(key)
 
         print(f"[{datetime.now().strftime('%H:%M:%S')}] Gespeichert: {file_prefix}")
 
@@ -189,5 +198,5 @@ if __name__ == "__main__":
     # Segmente behalten und gleichzeitig direkt auswerten:
     #   save_events=False, save_segments=True,  direct_analysis=True
     
-    # Bricht der Lauf ab, werden fertige Kombinationen beim Neustart übersprungen.
+    # Bricht der Lauf ab, werden fertige Kombinationen beim Neustart übersprungen. :)
     main(use_parallel=True, verbose=True, save_events=True, save_segments=True, direct_analysis=False)

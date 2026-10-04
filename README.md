@@ -61,7 +61,7 @@ pip install -r requirements.txt
 
 ## Datensatz
 
-* **Clickstream-Daten:** Der Zenodo-Datensatz „A web tracking data set of online browsing behavior of 2,148 users“ bildet das reale Surfverhalten der Nutzer ab.
+* **Clickstream-Daten:** Der Zenodo-Datensatz „A web tracking data set of online browsing behavior of 2,148 users“ (Kulshrestha et al., ICWSM 2021) bildet das reale Surfverhalten der Nutzer im Oktober 2018 ab. Er wird von `preprocessing.py` automatisch heruntergeladen.
 
 ---
 
@@ -73,7 +73,7 @@ Vor dem Ausführen der eigentlichen Simulation muss der Datensatz bereinigt und 
 ```bash
 python preprocessing.py
 ```
-Das Ergebnis wird in `browsing_clean.csv` gespeichert.
+Das Ergebnis wird in `browsing_clean.csv` gespeichert, die Kennzahlen des Datensatzes in `dataset_stats.json`.
 
 ### Simulation starten
 Die Parameterkombinationen werden in `sweep_blocks` in der `run_simulation.py` festgelegt. Über die Schalter im `main(...)`-Aufruf am Ende der Datei wird gewählt, was gespeichert und ausgewertet wird:
@@ -131,10 +131,13 @@ python varianceCheck.py
 
 Die Ergebnisse jedes Laufs werden in `variance_check_ranking.csv` gespeichert, Mittelwerte und Standardabweichungen pro Slotanzahl in `variance_check_summary.csv`. Bricht der Lauf ab, werden bereits fertige Seeds beim Neustart übersprungen. Mit `save_segments=True` im `main(...)`-Aufruf werden zusätzlich die Segmente jedes Laufs in `Data/ergebnisse/variance_check` gespeichert (ca. 50 MB pro Lauf).
 
+### Auswertung
+Die Abbildungen und Tabellen der Arbeit werden im Notebook `Auswertung/auswertung.ipynb` erzeugt und in `Data/ergebnisse/auswertung/` gespeichert. Die Ergebnis-CSVs liegen im Repository, die Rohdaten der Referenz-Slotreihe dagegen nicht. Sie entstehen bei jedem Lauf von `run_simulation.py`. Wurde die Simulation mit `direct_analysis=True` ausgeführt, wird oben im Notebook `direct = True` gesetzt.
+
 ## Architektur
 
 ### Die Simulation der Pseudonym-Rotation
-Die Simulation bildet einen Angriff eines globalen Trackers ab, der jeden Domain-Aufruf eines Nutzers erfasst.
+Die Simulation bildet die Pseudonym-Rotation ab. Der Verkettungsangriff in `verkettung.py` nimmt einen Tracker an, der jeden Domain-Aufruf eines Nutzers erfasst.
 
 **Slot-Zuweisung und Reproduzierbarkeit**
 
@@ -155,6 +158,7 @@ Jeder Slot durchläuft die Zustände FRESH → ACTIVE → WARM → SATURATED →
 * **max_days:** Maximales Alter des Pseudonyms in Tagen.
 
 Geprüft wird nur beim Wechsel auf eine andere Domain (Rotation-Lock), und zwar der Slot der verlassenen und der Slot der neuen Domain. Bei einer Rotation werden alle Zähler, Zeitstempel und Domain-Historien des Slots gelöscht und die Zuweisungen der betroffenen Domains aus der `domain_to_slot_map` entfernt. Beim nächsten Aufruf erhält die Domain eine neue Zuweisung.
+
 ---
 
 ## KI-Nutzung
