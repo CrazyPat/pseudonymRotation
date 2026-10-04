@@ -147,7 +147,7 @@ class UserSimulation:
         for slot_id, slot in self.slots.items():
             detail = threshold_reached(slot, self.cfg, observation_end)
             reason = "expired" if detail and slot_id != last_slot else "end_of_stream"
-            self._close_slot_segment(slot_id, reason, observation_end, trigger_detail=detail)
+            self._close_slot_segment(slot_id, reason, observation_end, trigger_detail=detail if reason == "expired" else None)
     
 
     def total_resets(self) -> int:

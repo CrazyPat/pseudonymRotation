@@ -44,12 +44,13 @@ sim_auswertung.ipynb
 Verkettung.ipynb
 re_identifikation.ipynb
 
-Data/ergebnisse/raw_sweeps_mit_days
-Data/ergebnisse/raw_sweeps_ohne_days
+Data/ergebnisse/raw_sweeps
+Data/ergebnisse/raw_sweeps
 Data/ergebnisse/variance_check
 Data/ergebnisse1/raw_sweeps_mit_days
 Data/ergebnisse1/raw_sweeps_ohne_days
 Data/ergebnisse1/variance_check
+Data/ergebnisse1/
 
 
 Data/ergebnisse_tracker_mapping/
@@ -59,3 +60,10 @@ days.py
 reason_analysis.py
 test.py
 Funktionen/data/dataset_check.py
+
+# macOS
+.DS_Store
+._*
+
+# Jupyter Notebooks
+.ipynb_checkpoints/

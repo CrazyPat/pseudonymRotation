@@ -6,6 +6,7 @@ from Funktionen.config import PipelineConfig
 from Funktionen.pseudonym.simulation import UserSimulation
 from Funktionen.utils import log_status
 from datetime import datetime
+from reason_analysis import reason_analysis
 
 def simulate_user_chunk(chunk_args):
     """Führt die Simulation für einen einzelnen Nutzer in einem separaten Prozess aus."""
@@ -25,7 +26,7 @@ def simulate_user_chunk(chunk_args):
 
 def main(use_parallel: bool = True, verbose: bool = True):
     data_path = Path("Data/datensatz/browsing_clean.csv")
-    out_dir = Path("Data/ergebnisse/raw_sweeps_mit_days")
+    out_dir = Path("Data/ergebnisse/raw_sweeps")
     out_dir.mkdir(parents=True, exist_ok=True)
     
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Lade Basis-Daten...")
@@ -64,6 +65,14 @@ def main(use_parallel: bool = True, verbose: bool = True):
         ([100], [10], [100, 250, 500, 750], [31]),
         ([225], [5, 7], [700], [14]),
         ([25, 150], [10], [700], [14]),
+        ([100], [10], [100, 250], [14]),
+        ([100], [5, 7, 15], [700], [14]),
+        ([15, 35, 75], [10], [700], [14]),
+        ([25, 50, 100], [3, 5, 7, 10], [100, 250, 500], [14, 21]),
+        ([25, 50, 75, 100], [10], [700], [21]),
+        ([15, 25, 35, 75, 150, 600], [10], [700], [7]),
+        ([100], [10], [100, 250, 500, 1250, 1500, 2000], [7]),
+        ([100], [3, 5, 7, 15, 20], [700], [7]),
         ([150], [30], [250, 500], [31]),]
 
     param_combinations = []
@@ -118,6 +127,7 @@ def main(use_parallel: bool = True, verbose: bool = True):
         print(f"[{datetime.now().strftime('%H:%M:%S')}] Gespeichert: {file_prefix}")
 
     print(f"\n[{datetime.now().strftime('%H:%M:%S')}] Sweep vollständig abgeschlossen.")
-
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Starte Abschlussgrund-Analyse...")
+    reason_analysis()
 if __name__ == "__main__":
     main(use_parallel=True, verbose=True)

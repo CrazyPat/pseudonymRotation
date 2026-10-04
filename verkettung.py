@@ -132,10 +132,10 @@ def process_single_file(seg_file):
 
 
 def verkettung():
-    sweep_dir = Path("Data/ergebnisse/raw_sweeps_mit_days")
+    sweep_dir = Path("Data/ergebnisse/raw_sweeps")
     out_dir = Path("Data/ergebnisse")
     out_dir.mkdir(parents=True, exist_ok=True)
-    output_file = out_dir / "verkettungs_ranking_mit_days.csv"
+    output_file = out_dir / "verkettungs_ranking.csv"
     # Schon fertige confs
     results = []
     # Bereits verarbeitete Konfigs
