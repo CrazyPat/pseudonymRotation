@@ -7,36 +7,40 @@ Inhalt ist die Python-Simulations- und Evaluationspipeline für die Bachelorarbe
 ## Projektstruktur
 
 ```text
+├── Auswertung/                              # Alle Auswertungen
+│   └── auswertung.ipynb                     # Alle Abbilungen und Tabellen
 ├── Data/                                    # Datensatz und Ergebnisse
 │   ├── datensatz                            # Alle relevanten Datensätze
 │   │   ├── browsing.csv                     # Raw Zenodo-Datensatz: https://zenodo.org/records/4757574
 │   │   ├── browsing_clean.csv               # Aufgeräumter Zenodo-Datensatz
-│   │   ├── domain_tracker_mapping.json      # Verworfener Ansatz: Zurodnung aller Domains zu Trackern basierend auf dem WhoTracks.Me-Datensatz
-│   ├── ergebnisse                           # Ergebnisse
-│   │   ├── raw_sweeps                       # Speichert Simulationsergebnisse von jeder Konfiguration
+│   │   └── domain_tracker_mapping.json      # Verworfener Ansatz: Zurodnung aller Domains zu Trackern basierend auf dem WhoTracks.Me-Datensatz
+│   ├── ergebnisse/                          # Ergebnisse
+│   │   └── raw_sweeps/                      # Speichert Simulationsergebnisse von jeder Konfiguration (LOGS)
 │   │   │   ├── parameter_events.csv         # Jedes Event einer Konfiguration
-│   │   │   ├── parameter_segments.csv       # Jedes Segment einer Konfiguration
+│   │   │   └── parameter_segments.csv       # Jedes Segment einer Konfiguration
+│   │   └── variance_check/                  # Speichert die Varianzergebnisse von jeder Konfiguration (Logs)
+│   │   │   └── parameter_segments.csv       # Jedes Segment einer Konfiguration
 │   │   ├── verkettungs_ranking.csv          # Ergebnisse der Verkettung für den kompletten Sweep
 │   │   ├── sweep_trigger_analyse.csv        # Abschlussgründe für eine Konfiguration
 │   │   ├── variance_check_ranking.csv       # Ergebnis des Variance_Checks
-│   │   ├── variance_check_summary.csv       # Zusammenfassung des Variance_Checks
+│   │   └── variance_check_summary.csv       # Zusammenfassung des Variance_Checks
 ├── Funktionen/                              # Python-Paket der Simulationspipeline
 │   ├── daten/                               # Browsing.csv und WhoTracks.Me Datensatz Download
 │   │   ├── __init__.py                      # init
-│   │   ├── load_dataset.py                  # Download des raw browsing.csv
+│   │   └── load_dataset.py                  # Download des raw browsing.csv
 │   ├── pseudonym/                           # Lifecycle, HMAC-Zuweisung und Nutzersimulation
 │   │   ├── __init__.py                      # init
 │   │   ├── lifecycle.py                     # SlotState-Container und Lifecycle
 │   │   ├── simulation.py                    # UserSimulation
 │   │   └── zuweisung.py                     # SlotAssigner
 │   ├── config.py                            # Datencontainer
-│   └── utils.py                             # Logging-Funktion
+│   ├── utils.py                             # Logging-Funktion
+│   └── reason_analysis.py                   # Erstellt die Abschlussgründe aus allen Konfigurationen
 ├── preprocessing.py                         # Download und Vorverarbeitung des Datensatzes
 ├── run_simulation.py                        # Hauptskript
 ├── verkettung.py                            # Berechnet Verkettungsmetriken
 ├── varianceCheckSimulation.py               # Variiert Slotzuweisung für die Gesamte Simulation 20 mal durch
 ├── varianceCheckVerkettung.py               # Rechnet Verkettung für die Variierte Simulation aus
-├── reason_analysis.py                       # Erstellt die Abschlussgründe aus allen Konfigurationen
 ├── requirements.txt                         # Projekt-Abhängigkeiten
 └── README.md                                # Projektdokumentation
 ```

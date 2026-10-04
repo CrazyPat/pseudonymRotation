@@ -1,12 +1,14 @@
 import pandas as pd
 import concurrent.futures
 import itertools
+import json
 from pathlib import Path
 from Funktionen.config import PipelineConfig
 from Funktionen.pseudonym.simulation import UserSimulation
 from Funktionen.utils import log_status
 from datetime import datetime
-from reason_analysis import reason_analysis
+from Funktionen.reason_analysis import reason_analysis, summarize_segments
+from verkettung import linkage_metrics
 
 def simulate_user_chunk(chunk_args):
     """Führt die Simulation für einen einzelnen Nutzer in einem separaten Prozess aus."""
@@ -24,7 +26,7 @@ def simulate_user_chunk(chunk_args):
             )
     return annotated_df, sim.segment_records
 
-def main(use_parallel: bool = True, verbose: bool = True):
+def main(use_parallel: bool = True, verbose: bool = True, save_events: bool = True, save_segments: bool = True, direct_analysis: bool = False, keep_raw=None):
     data_path = Path("Data/datensatz/browsing_clean.csv")
     out_dir = Path("Data/ergebnisse/raw_sweeps")
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -84,13 +86,31 @@ def main(use_parallel: bool = True, verbose: bool = True):
     
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Starte Grid Search mit {total_combinations} Kombinationen.\n")
 
+    # Direkte Auswertung um speicher zu sparen werden sie direkt geschrieben
+    linkage_path = Path("Data/ergebnisse/verkettungs_ranking_direkt.csv")
+    trigger_path = Path("Data/ergebnisse/sweep_trigger_analyse_direkt.csv")
+    linkage_rows = pd.read_csv(linkage_path).to_dict("records") if direct_analysis and linkage_path.exists() else []
+    trigger_rows = pd.read_csv(trigger_path).to_dict("records") if direct_analysis and trigger_path.exists() else []
+    linkage_done = {(r["Anzahl_Slots"], r["Max_Domains"], r["Max_Events"], r["Max_Days"]) for r in linkage_rows}
+    trigger_done = {(r["Slots"], r["Max_Domains"], r["Max_Events"], r["Max_Days"]) for r in trigger_rows}
+
     for idx, (slots, domains, events, days) in enumerate(param_combinations, 1):
         file_prefix = f"{slots}_{domains}_{events}_{days}"
         events_out_path = out_dir / f"{file_prefix}_events.csv"
         segments_out_path = out_dir / f"{file_prefix}_segments.csv"
 
-        # Resume-Logik: Bereits berechnete Kombinationen überspringen
-        if events_out_path.exists() and segments_out_path.exists():
+        # Berechnete Segmente überspringen
+        key = (slots, domains, events, days)
+        write_events = save_events or key in keep_raw
+        write_segments = save_segments or key in keep_raw
+        needed_files = []
+        if write_events:
+            needed_files.append(events_out_path)
+        if write_segments:
+            needed_files.append(segments_out_path)
+        files_done = all(p.exists() for p in needed_files)
+        direct_done = not direct_analysis or (key in linkage_done and key in trigger_done)
+        if (needed_files or direct_analysis) and files_done and direct_done:
             print(f"[{idx}/{total_combinations}] Überspringe {file_prefix} - Dateien existieren bereits.")
             continue
 
@@ -118,16 +138,56 @@ def main(use_parallel: bool = True, verbose: bool = True):
                 all_annotated_rows.append(annotated_df)
                 all_segment_records.extend(segment_records)
 
-        # Ergebnisse pro Parameter-Kombination in den Ordner speichern
-        final_df = pd.concat(all_annotated_rows, ignore_index=True)
-        final_df.to_csv(events_out_path, index=False)
-        
+        # In Ordner speichern wenn sie schon berechnet sind
+        if save_events:
+            final_df = pd.concat(all_annotated_rows, ignore_index=True)
+            final_df.to_csv(events_out_path, index=False)
+
         segments_df = pd.DataFrame(all_segment_records)
-        segments_df.to_csv(segments_out_path, index=False)
+        if save_segments:
+            segments_df.to_csv(segments_out_path, index=False)
+        # Falls wirklich keine logs gespeichert werden sollen dann werden diese hier seperat dazugespeichert. Wichtig für auswertung.!
+        if keep_raw is None:
+            keep_raw = [(s, 10, 700, 7) for s in [10, 25, 50, 100, 225, 600]]
+        # Direkte auswertung
+        if direct_analysis and not segments_df.empty:
+            if key not in trigger_done:
+                trigger_rows.append(summarize_segments(segments_df, slots, domains, events, days))
+                pd.DataFrame(trigger_rows).to_csv(trigger_path, index=False)
+
+            if key not in linkage_done:
+                seg_df = segments_df.copy()
+                seg_df["domain_counter"] = seg_df["domain_counter_json"].apply(lambda x: json.loads(x) if isinstance(x, str) else x)
+                seg_df = seg_df[seg_df["domain_counter"].astype(bool)].reset_index(drop=True)
+                row = {"Anzahl_Slots": slots, "Max_Domains": domains, "Max_Events": events, "Max_Days": days}
+                if len(seg_df) >= 2:
+                    m_incl = linkage_metrics(seg_df)
+                    m_excl = linkage_metrics(seg_df[seg_df["trigger"] != "end_of_stream"])
+                    if m_incl: row.update({f"Incl_{k}": v for k, v in m_incl.items()})
+                    if m_excl: row.update({f"Excl_{k}": v for k, v in m_excl.items()})
+                linkage_rows.append(row)
+                pd.DataFrame(linkage_rows).to_csv(linkage_path, index=False)
+
         print(f"[{datetime.now().strftime('%H:%M:%S')}] Gespeichert: {file_prefix}")
 
     print(f"\n[{datetime.now().strftime('%H:%M:%S')}] Sweep vollständig abgeschlossen.")
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Starte Abschlussgrund-Analyse...")
-    reason_analysis()
+    if save_segments:
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Starte Abschlussgrund-Analyse...")
+        reason_analysis(sweep_dir=out_dir, output_file="Data/ergebnisse/sweep_trigger_analyse.csv")
+
 if __name__ == "__main__":
-    main(use_parallel=True, verbose=True)
+    # Durchlaufsschaltung
+    # save_events -> speichert alle Events pro Kombination (sehr groß für den Zeitverlauf der Referenz nötig)
+    # save_segments -> speichert alle Segmente pro Kombination (für verkettung.py und reason_analysis)
+    # direct_analysis -> berechnet Verkettung und Abschlussgründe direkt im Speicher, ohne Rohdaten zu speichern
+    
+    # Alles speichern, danach verkettung.py ausführen (schnellstes):
+    #   save_events=True,  save_segments=True,  direct_analysis=False
+    # Ohne Speicherverbrauch, Ergebnisse landen direkt in *_direkt.csv:
+    #   save_events=False, save_segments=False, direct_analysis=True
+    # Segmente behalten und gleichzeitig direkt auswerten:
+    #   save_events=False, save_segments=True,  direct_analysis=True
+    
+    # Bricht der Lauf ab, werden fertige Kombinationen beim Neustart übersprungen.
+    # Alle drei auf False ist nicht sinnvoll, da dann weder gespeichert noch ausgewertet wird :)
+    main(use_parallel=True, verbose=True, save_events=True, save_segments=True, direct_analysis=False)
