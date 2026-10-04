@@ -111,7 +111,7 @@ def main(use_parallel: bool = True, verbose: bool = True, save_events: bool = Tr
         files_done = all(p.exists() for p in needed_files)
         direct_done = not direct_analysis or (key in linkage_done and key in trigger_done)
         if (needed_files or direct_analysis) and files_done and direct_done:
-            print(f"[{idx}/{total_combinations}] Überspringe {file_prefix} - Dateien existieren bereits.")
+            print(f"[{idx}/{total_combinations}] Überspringe {file_prefix} Dateien existieren bereits.")
             continue
 
         print(f"\n[{datetime.now().strftime('%H:%M:%S')}] [{idx}/{total_combinations}] Simuliere: Slots={slots}, Domains={domains}, Events={events}, Days={days}")
@@ -146,7 +146,7 @@ def main(use_parallel: bool = True, verbose: bool = True, save_events: bool = Tr
         segments_df = pd.DataFrame(all_segment_records)
         if save_segments:
             segments_df.to_csv(segments_out_path, index=False)
-        # Falls wirklich keine logs gespeichert werden sollen dann werden diese hier seperat dazugespeichert. Wichtig für auswertung.!
+        # Falls wirklich keine logs gespeichert werden sollen dann werden diese hier seperat dazugespeichert. Wichtig für auswertung.! Wird außer im code geändert immer gespeichert
         if keep_raw is None:
             keep_raw = [(s, 10, 700, 7) for s in [10, 25, 50, 100, 225, 600]]
         # Direkte auswertung
@@ -176,18 +176,18 @@ def main(use_parallel: bool = True, verbose: bool = True, save_events: bool = Tr
         reason_analysis(sweep_dir=out_dir, output_file="Data/ergebnisse/sweep_trigger_analyse.csv")
 
 if __name__ == "__main__":
-    # Durchlaufsschaltung
-    # save_events -> speichert alle Events pro Kombination (sehr groß für den Zeitverlauf der Referenz nötig)
-    # save_segments -> speichert alle Segmente pro Kombination (für verkettung.py und reason_analysis)
-    # direct_analysis -> berechnet Verkettung und Abschlussgründe direkt im Speicher, ohne Rohdaten zu speichern
+    # Schalter für den Durchlauf:
+    # save_events     -> speichert alle Events pro Kombination (sehr groß)
+    # save_segments   -> speichert alle Segmente pro Kombination (für verkettung.py und reason_analysis)
+    # direct_analysis -> berechnet Verkettung und Abschlussgründe direkt im Speicher, Ergebnisse landen in *_direkt.csv
+    # keep_raw        -> Kombinationen, deren Rohdaten immer gespeichert werden (für die Auswertung!)
     
-    # Alles speichern, danach verkettung.py ausführen (schnellstes):
+    # Alles speichern (ALLE Log-Dateien), danach seperat verkettung.py ausführen:
     #   save_events=True,  save_segments=True,  direct_analysis=False
-    # Ohne Speicherverbrauch, Ergebnisse landen direkt in *_direkt.csv:
+    # Wenig Speicherverbrauch, nur die Rohdaten der Referenz-Slotreihe werden gespeichert:
     #   save_events=False, save_segments=False, direct_analysis=True
     # Segmente behalten und gleichzeitig direkt auswerten:
     #   save_events=False, save_segments=True,  direct_analysis=True
     
     # Bricht der Lauf ab, werden fertige Kombinationen beim Neustart übersprungen.
-    # Alle drei auf False ist nicht sinnvoll, da dann weder gespeichert noch ausgewertet wird :)
     main(use_parallel=True, verbose=True, save_events=True, save_segments=True, direct_analysis=False)

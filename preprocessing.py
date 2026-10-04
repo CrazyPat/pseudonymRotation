@@ -1,6 +1,7 @@
 from pathlib import Path
 import pandas as pd
 from Funktionen.data.load_dataset import browsing_data
+from Funktionen.data.dataset_check import dataset_check
 
 def run_pipeline(input_file: str, clean_csv: str) -> None:
     """Führt die gesamte Pipeline aus: Laden der Daten und Bereinigung."""
@@ -24,6 +25,7 @@ def run_pipeline(input_file: str, clean_csv: str) -> None:
     # Bereinigte CSV speichern mit nur benötigten Spalten
     df[["panelist_id", "domain", "used_at"]].to_csv(clean_csv, index=False, encoding="utf-8")
     print(f"Daten erfolgreich bereinigt und gespeichert unter: {clean_csv}")
+    dataset_check(input_file=clean_csv, output_file="Data/ergebnisse/dataset_stats.json")
 
 # main
 if __name__ == "__main__":

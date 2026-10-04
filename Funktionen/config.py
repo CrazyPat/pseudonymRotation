@@ -1,5 +1,5 @@
 """
-Konfiguration der Simulationsparameter.
+Konfiguration der Simulationsparameter. Nur Platzhalter!
 """
 
 from dataclasses import dataclass
