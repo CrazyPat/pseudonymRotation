@@ -132,7 +132,7 @@ python varianceCheck.py
 Die Ergebnisse jedes Laufs werden in `variance_check_ranking.csv` gespeichert, Mittelwerte und Standardabweichungen pro Slotanzahl in `variance_check_summary.csv`. Bricht der Lauf ab, werden bereits fertige Seeds beim Neustart übersprungen. Mit `save_segments=True` im `main(...)`-Aufruf werden zusätzlich die Segmente jedes Laufs in `Data/ergebnisse/variance_check` gespeichert (ca. 50 MB pro Lauf).
 
 ### Auswertung
-Die Abbildungen und Tabellen der Arbeit werden im Notebook `Auswertung/auswertung.ipynb` erzeugt und in `Data/ergebnisse/auswertung/` gespeichert. Die Ergebnis-CSVs liegen im Repository, die Rohdaten der Referenz-Slotreihe dagegen nicht. Sie entstehen bei jedem Lauf von `run_simulation.py`. Wurde die Simulation mit `direct_analysis=True` ausgeführt, wird oben im Notebook `direct = True` gesetzt.
+Die Abbildungen und Tabellen der Arbeit werden im Notebook `Auswertung/auswertung.ipynb` erzeugt. Die Ergebnis-CSVs liegen im Repository, die Rohdaten der Referenz-Slotreihe dagegen nicht. Sie entstehen bei jedem Lauf von `run_simulation.py`. Wurde die Simulation mit `direct_analysis=True` ausgeführt, wird oben im Notebook `direct = True` gesetzt.
 
 ## Architektur
 

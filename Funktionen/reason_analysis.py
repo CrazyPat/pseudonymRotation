@@ -31,15 +31,15 @@ def summarize_segments(df, slots, domains, events, days):
         "Max_Events": events,
         "Max_Days": days,
         "Segments": n_segs,
-        "Median (Tage)": round(p50, 3),
+        "Median_Age_Days": round(p50, 3),
         "Avg_Overshoot": round(avg_overshoot, 2),
         "Max_Overshoot": round(max_overshoot, 2),
-        "Domains pro Pseudonym (Mittel)": round(df['unique_domains'].mean(), 3),
-        "Füllgrad Pseudonyme (%)": round(fill.mean() * 100, 3),
-        "Belegte Slots pro Nutzer (%)": round(used_slots.mean() * 100, 3),
-        "Pseudonyme ohne Domainwechsel (%)": round(single.mean() * 100, 3),
-        "Aufrufe ohne domainübergreifende Wiedererkennung (%)": round(df.loc[single, 'page_visits'].sum() / df['page_visits'].sum() * 100, 3),
-        "Trigger-Verteilung": triggers
+        "Avg_Domains_Per_Segment": round(df['unique_domains'].mean(), 3),
+        "Domain_Limit_Fill_Pct": round(fill.mean() * 100, 3),
+        "Used_Slots_Pct": round(used_slots.mean() * 100, 3),
+        "Single_Domain_Segments_Pct": round(single.mean() * 100, 3),
+        "Single_Domain_Visits_Pct": round(df.loc[single, 'page_visits'].sum() / df['page_visits'].sum() * 100, 3),
+        "Trigger_Distribution": triggers
     }
 
 

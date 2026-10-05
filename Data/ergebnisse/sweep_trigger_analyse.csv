@@ -1,4 +1,4 @@
-Slots,Max_Domains,Max_Events,Max_Days,Segments,Median (Tage),Avg_Overshoot,Max_Overshoot,Domains pro Pseudonym (Mittel),Füllgrad Pseudonyme (%),Belegte Slots pro Nutzer (%),Pseudonyme ohne Domainwechsel (%),Aufrufe ohne domainübergreifende Wiedererkennung (%),Trigger-Verteilung
+Slots,Max_Domains,Max_Events,Max_Days,Segments,Median_Age_Days,Avg_Overshoot,Max_Overshoot,Avg_Domains_Per_Segment,Domain_Limit_Fill_Pct,Used_Slots_Pct,Single_Domain_Segments_Pct,Single_Domain_Visits_Pct,Trigger_Distribution
 100,10,1000,14,149201,15.171,4.16,5006,1.923,19.233,55.744,50.979,30.245,"{'end_of_stream': 0.37846931320835653, 'Days': 0.37194790919631904, 'expired': 0.23200246647140435, 'Events': 0.014778721322243149, 'Domains': 0.0028015898016769325}"
 100,10,1000,21,130878,21.965,4.46,5006,2.045,20.447,53.586,48.555,27.385,"{'end_of_stream': 0.4887910878833723, 'Days': 0.25778969727532514, 'expired': 0.2278228579287581, 'Events': 0.02021730160913217, 'Domains': 0.005379055303412338}"
 100,10,1000,31,110851,14.615,29.16,5006,2.134,21.342,50.51,47.425,24.773,"{'end_of_stream': 0.9614437397948598, 'Events': 0.030157598939116473, 'Domains': 0.008398661266023762}"
