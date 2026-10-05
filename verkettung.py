@@ -21,7 +21,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from sklearn.feature_extraction.text import TfidfTransformer
 
     
-def linkage_metrics(df_segments) -> dict: 
+def linkage_metrics(df_segments) -> dict:
     """Berechnet die Verkettungs-Metriken für ein df."""
     # Indexierung fixen. Später für incl und excl wichtig, weil sonst Lücken bleiben.
     df_segments = df_segments.reset_index(drop=True)
@@ -61,11 +61,11 @@ def linkage_metrics(df_segments) -> dict:
 
         chunk_users = user_ids[start_idx:end_idx]
         
-        # Numpy Broadcasting: Matrix-Masken für den ganzen Chunk aufbauen
+        # Matrixmasken für den ganzen chunk aufbauen
         own_mask = (chunk_users[:, None] == user_ids)
         other_mask = (chunk_users[:, None] != user_ids)
         
-        # Sich selbst ausschließen (Diagonale der Chunk-Sicht auf False setzen)
+        # Sich selbst ausschließen
         local_idx = np.arange(end_idx - start_idx)
         global_idx = np.arange(start_idx, end_idx)
         own_mask[local_idx, global_idx] = False
@@ -84,8 +84,20 @@ def linkage_metrics(df_segments) -> dict:
         
         # Damit Arbeitsspeicher nicht zu groß wird.
         del sim_chunk, own_mask, other_mask
-
-    # Chord-Distanz berechnen. Wie weit die Segmente auseinander liegen.
+        
+    # Erfolg pro Segment für die zusätzlichen Kennzahlen.
+    success = (own_sims > other_sims) & (own_sims > 0)
+    # Gleichstand zwischen eigenem und fremdem Segment (zählt als Fehlschlag).
+    tie = (own_sims == other_sims) & (own_sims > 0)
+    single = df_segments['unique_domains'].values == 1
+    # Zufalls-Baseline: ein zufällig gewähltes anderes Segment ist ein eigenes.
+    own_counts = pd.Series(user_ids).map(segments_per_user).values
+    baseline = np.mean((own_counts - 1) / (n_segments - 1))
+    # Anteil Nutzer mit mindestens einer Verkettung und Rate nach Aufrufen gewichtet.
+    users_linked = pd.Series(success).groupby(user_ids).any().mean()
+    visits = df_segments['page_visits'].values
+    
+    # Chord-Distanz berechnen wird aber nicht weiter verwendet (für zukunft)
     chord = np.sqrt(np.maximum(0, 2 - 2 * own_sims))
     return {
         "Avg_Chord_Distance": np.mean(chord),
@@ -94,6 +106,12 @@ def linkage_metrics(df_segments) -> dict:
         "Identification_Rate": attacker_success_count / n_segments,
         "Valid_Segments": n_segments,
         "Share_Single_Segment_Users": share_single_segment_users,
+        "Tie_Share": tie.mean(),
+        "No_Own_Share": np.mean(own_sims == 0),
+        "Tie_Single_Domain_Share": (tie & single).sum() / max(tie.sum(), 1),
+        "Random_Baseline": baseline,
+        "Users_Linked_Share": users_linked,
+        "Visit_Weighted_Rate": (visits * success).sum() / visits.sum(),
     }
 
 
