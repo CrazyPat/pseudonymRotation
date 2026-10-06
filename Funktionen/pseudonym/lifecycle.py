@@ -59,7 +59,7 @@ def update_lifecycle_on_event(slot: SlotState, cfg: PipelineConfig, timestamp: p
     # ACTIVE -> WARM
     if slot.current_state == LifecycleState.ACTIVE and not slot.warm_logged:
         # Tage Berechnung seit Start des Pseudonyms
-        days = ((timestamp - slot.pseudonym_start_time).days if slot.pseudonym_start_time is not None else 0)
+        days = ((timestamp - slot.pseudonym_start_time).total_seconds() / 86400 if slot.pseudonym_start_time is not None else 0)
         # Wenn der Theshold erreicht ist wird:
         if (slot.page_visits >= warm_event_threshold or len(slot.cum_unique_domains) >= warm_domain_threshold or days >= warm_days_threshold):
             # der Slot auf WARM gesetzt.

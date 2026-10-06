@@ -87,7 +87,7 @@ Die Parameterkombinationen werden in `sweep_blocks` in der `run_simulation.py` f
 Es gibt zwei Wege, die zu denselben Ergebnissen führen:
 
 ```python
-# Alle Rohdaten speichern, danach seperat verkettung.py ausführen (ca. 230 GB)
+# Alle Rohdaten speichern, danach verkettung.py ausführen (ca. 230 GB)
 main(save_events=True, save_segments=True, direct_analysis=False)
 
 # Wenig Speicherverbrauch, Auswertung direkt während des Laufs
