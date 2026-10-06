@@ -199,4 +199,4 @@ if __name__ == "__main__":
     #   save_events=False, save_segments=True,  direct_analysis=True
     
     # Bricht der Lauf ab, werden fertige Kombinationen beim Neustart übersprungen. :)
-    main(use_parallel=True, verbose=True, save_events=False, save_segments=False, direct_analysis=True)
+    main(use_parallel=True, verbose=True, save_events=False, save_segments=True, direct_analysis=False)

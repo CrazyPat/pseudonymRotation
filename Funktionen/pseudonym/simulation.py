@@ -89,11 +89,11 @@ class UserSimulation:
     def process_event(self, domain: str, timestamp: pd.Timestamp) -> tuple[int, int]:
         """Verarbeitet jede Domain und prüft ob Rotation notwendig ist."""
         # Checkt, in welchen Slot die Domain gehört
-        pseudonym = self.assigner._hash_domain(domain)
+        domain_key = self.assigner._hash_domain(domain)
         # Prüfe zuerst die vorherige Domain
         if self.global_last_domain is not None and domain != self.global_last_domain:
-            prev_pseudo = self.assigner._hash_domain(self.global_last_domain)
-            prev_slot_id = self.assigner.assign_domain(prev_pseudo)
+            prev_key = self.assigner._hash_domain(self.global_last_domain)
+            prev_slot_id = self.assigner.assign_domain(prev_key)
             prev_slot = self.slots[prev_slot_id]
             # Prüfen ob Schwellenwert erreicht wurde
             reason_detail = threshold_reached(prev_slot, self.cfg, timestamp)
@@ -104,7 +104,7 @@ class UserSimulation:
         new_domain = self.global_last_domain is None or domain != self.global_last_domain
         # Solange bis der slot nicht rotiert werden muss
         while True:
-            slot_id = self.assigner.assign_domain(pseudonym)
+            slot_id = self.assigner.assign_domain(domain_key)
             slot = self.slots[slot_id]
             # prüfen
             reason_detail = threshold_reached(slot, self.cfg, timestamp)

@@ -169,7 +169,7 @@ def verkettung():
             for _, row in df_existing.iterrows():
                 # Erfasst bereits berechnete Konfigurationen
                 processed_set.add((int(row["Anzahl_Slots"]), int(row["Max_Domains"]), int(row["Max_Events"]), int(row["Max_Days"])))
-            log_status(f"Auswertung für {len(files_to_process)} (von {len(segment_files)}) Sweep-Dateien")
+            log_status(f"Checkpoint geladen: {len(processed_set)} werden übersprungen.")
     # Alle Sweep-Dateien aus der Simulation.
     segment_files = list(sweep_dir.glob("*_segments.csv"))
     files_to_process = []
@@ -198,7 +198,7 @@ def verkettung():
                 try:
                     res = future.result()
                 except Exception as e:
-                    log_status(f"[{done}/{len(files_to_process)}] fertig: {seg_file.name}")
+                    log_status(f"FEHLER bei {seg_file.name}: {e}")
                     continue
                 if res is not None:
                     # Zwischenspeichern.

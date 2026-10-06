@@ -106,9 +106,9 @@ python run_simulation.py
 ### Verkettung berechnen
 Nach dem Sweep werden die Verkettungsmetriken (Kosinus-Ähnlichkeit, Chord-Distance, Identification-Rate) aus den Segment-Dateien berechnet:
 
-\```bash
+```bash
 python verkettung.py
-\```
+```
 
 Das Ergebnis wird in `verkettungs_ranking.csv` gespeichert.
 

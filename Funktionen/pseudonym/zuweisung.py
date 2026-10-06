@@ -26,8 +26,8 @@ class SlotAssigner:
         self.local_secret = local_secret
         # Leeres Mapping von Domain --> Slot
         self.domain_to_slot_map: Dict[str, int] = {}
-        # Leeres Mapping von Slot --> Pseudonyme = Baut die Zuordnung auf (z. B. 0: set())
-        self.slot_to_pseudonym: Dict[int, Set[str]] = {i: set() for i in range(cfg.num_slots)}
+        # Leeres Mapping von Slot --> Domains = Baut die Zuordnung auf (z. B. 0: set())
+        self.slot_to_domains: Dict[int, Set[str]] = {i: set() for i in range(cfg.num_slots)}
 
 
     @staticmethod
@@ -51,25 +51,25 @@ class SlotAssigner:
         ).hexdigest()
 
 
-    def assign_domain(self, pseudonym: str) -> int:
+    def assign_domain(self, domain_key: str) -> int:
         """Hasht die Domain und weist einen Slot zu."""
         # Prüfung ob Domain bereits zugewiesen ist. Falls ja wird Slot zurückgegeben.
-        if pseudonym in self.domain_to_slot_map:
-            return self.domain_to_slot_map[pseudonym]
+        if domain_key in self.domain_to_slot_map:
+            return self.domain_to_slot_map[domain_key]
         # Falls keine Zuweisung existiert, wird ein zufälliger Slot zugewiesen.
         # Randomgenerator wählt zwischen 0 und in der Konfig angegebenen Slots. (numpy dann in py integer)
         assigned_slot = int(self.rng.integers(0, self.cfg.num_slots))
-        # In Mapping eintragen. Pseudonym wird dem Slot zugewiesen.
-        self.domain_to_slot_map[pseudonym] = assigned_slot
+        # In Mapping eintragen. Domain wird dem Slot zugewiesen.
+        self.domain_to_slot_map[domain_key] = assigned_slot
         # Für Rotationen eintragen. Wer gehört alles zu diesem Slot.
-        self.slot_to_pseudonym[assigned_slot].add(pseudonym)
+        self.slot_to_domains[assigned_slot].add(domain_key)
         return assigned_slot
 
 
     def release_slot(self, slot_id: int) -> None:
         """Rotation eines Slots"""
         # Alle Domains werden aus dem Slot entfernt. Nutzt die vorhin eingetragenen Domains.
-        for pseudonym in self.slot_to_pseudonym[slot_id]:
-            del self.domain_to_slot_map[pseudonym]
+        for domain_key in self.slot_to_domains[slot_id]:
+            del self.domain_to_slot_map[domain_key]
         # Slot wird restlos geleert.
-        self.slot_to_pseudonym[slot_id].clear()
+        self.slot_to_domains[slot_id].clear()
