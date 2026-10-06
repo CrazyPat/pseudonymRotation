@@ -19,6 +19,7 @@ from sklearn.feature_extraction import DictVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from sklearn.feature_extraction.text import TfidfTransformer
+from Funktionen.utils import log_status
 
     
 def linkage_metrics(df_segments) -> dict:
@@ -123,7 +124,7 @@ def process_single_file(seg_file):
     if len(parts) != 4:
         return None
     slots, domains, events, days = map(int, parts)
-    print(f"Datei: Slots={slots}, Domains={domains}, Events={events}, Days={days}")
+    log_status(f"Start: Slots={slots}, Domains={domains}, Events={events}, Days={days}")
     # csv prüfen und laden.
     df_segments = pd.read_csv(seg_file)
     if df_segments.empty:
@@ -168,7 +169,7 @@ def verkettung():
             for _, row in df_existing.iterrows():
                 # Erfasst bereits berechnete Konfigurationen
                 processed_set.add((int(row["Anzahl_Slots"]), int(row["Max_Domains"]), int(row["Max_Events"]), int(row["Max_Days"])))
-            print(f"Checkpoint geladen: {len(processed_set)} werden übersprungen.")
+            log_status(f"Auswertung für {len(files_to_process)} (von {len(segment_files)}) Sweep-Dateien")
     # Alle Sweep-Dateien aus der Simulation.
     segment_files = list(sweep_dir.glob("*_segments.csv"))
     files_to_process = []
@@ -192,12 +193,12 @@ def verkettung():
             # Parallelisiert die Verarbeitung und führt process_single_file für jede Datei aus. Speichert die Futures in einem Dict.
             future_to_file = {executor.submit(process_single_file, seg_file): seg_file for seg_file in files_to_process}
             # Wenn ein Kern fertig ist --> Ergebnis zurückgeben.
-            for future in as_completed(future_to_file):
+            for done, future in enumerate(as_completed(future_to_file), start=1):
                 seg_file = future_to_file[future]
                 try:
                     res = future.result()
                 except Exception as e:
-                    print(f"FEHLER bei {seg_file.name}: {e}")
+                    log_status(f"[{done}/{len(files_to_process)}] fertig: {seg_file.name}")
                     continue
                 if res is not None:
                     # Zwischenspeichern.
@@ -207,9 +208,9 @@ def verkettung():
     df_final = pd.DataFrame(results)
     if not df_final.empty:
         df_final.to_csv(output_file, index=False)
-        print(f"\nErfolgreich gespeichert unter: {output_file}")
+        log_status(f"Erfolgreich gespeichert unter: {output_file}")
     else:
-        print("Keine Ergebnisse zum Auswerten gefunden.")
+        log_status("Keine Ergebnisse zum Auswerten gefunden.")
 
 # main
 if __name__ == "__main__":
