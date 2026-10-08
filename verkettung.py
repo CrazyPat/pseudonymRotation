@@ -22,7 +22,7 @@ from sklearn.feature_extraction.text import TfidfTransformer
 from Funktionen.utils import log_status
 
     
-def linkage_metrics(df_segments) -> dict:
+def linkage_metrics(df_segments, return_success: bool = False) -> dict:
     """Berechnet die Verkettungs-Metriken für ein df."""
     # Indexierung fixen. Später für incl und excl wichtig, weil sonst Lücken bleiben.
     df_segments = df_segments.reset_index(drop=True)
@@ -98,9 +98,9 @@ def linkage_metrics(df_segments) -> dict:
     users_linked = pd.Series(success).groupby(user_ids).any().mean()
     visits = df_segments['page_visits'].values
     
-    # Chord-Distanz berechnen wird aber nicht weiter verwendet (für zukunft)
+        # Chord-Distanz berechnen wird aber nicht weiter verwendet (für zukunft)
     chord = np.sqrt(np.maximum(0, 2 - 2 * own_sims))
-    return {
+    metrics = {
         "Avg_Chord_Distance": np.mean(chord),
         "Avg_Max_Cosine_Own": np.mean(own_sims),
         "Avg_Max_Cosine_Other": np.mean(other_sims),
@@ -114,6 +114,10 @@ def linkage_metrics(df_segments) -> dict:
         "Users_Linked_Share": users_linked,
         "Visit_Weighted_Rate": (visits * success).sum() / visits.sum(),
     }
+    # Erfolg pro Segment zusätzlich zurückgeben, z.B. für die Auswertung nach Surfmenge im Notebook
+    if return_success:
+        return metrics, success
+    return metrics
 
 
 def process_single_file(seg_file):

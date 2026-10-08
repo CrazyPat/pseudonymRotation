@@ -43,7 +43,18 @@ def main(use_parallel: bool = True, verbose: bool = True, save_events: bool = Tr
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Gruppiere Nutzer...")
     grouped_users = list(df.groupby("panelist_id", sort=False))
     total_users = len(grouped_users)
+    
     # Kompletter block für eine leichte ausführung. Das sind alle Kombinationen
+    # Jeder Eintrag ist ein Block aus vier Listen in der Reihenfolge:
+    # ([Slots], [Max_Domains], [Max_Events], [Max_Days])
+    # Aus jedem Block wird jede Kombination der vier Listen simuliert.
+    # Auch ein einzelner Wert muss in eckigen Klammern stehen.
+    #
+    # Beispiele:
+    #   ([100], [10], [700], [7])          -> 1 Kombination, die Referenz
+    #   ([25, 50], [3], [100], [7, 14])    -> 2 x 1 x 1 x 2 = 4 Kombinationen:
+    #                                         (25, 3, 100, 7), (25, 3, 100, 14),
+    #                                         (50, 3, 100, 7), (50, 3, 100, 14)
     sweep_blocks = [
         ([25, 50, 100], [3, 5], [25, 100, 250], [7]),
         ([25, 50, 100], [3, 5], [25], [14]),

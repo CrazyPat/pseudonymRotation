@@ -58,14 +58,16 @@ def main(use_parallel: bool = True, save_segments: bool = False):
     grouped_users = list(df.groupby("panelist_id", sort=False))
     
     # grid sweep um die Referenz
-    slot_configs = [25, 50, 75, 100, 150, 225]
-    domain_configs = [10]
-    event_configs = [700]
-    day_configs = [7]
+    # Jeder Block besteht aus ([Slots], [Max_Domains], [Max_Events], [Max_Days]) und wird mit allen Seeds simuliert
+    sweep_blocks = [
+        ([25, 50, 75, 100, 150, 225], [10], [700], [7]),
+        ([100], [10], [500, 1000, 1250, 1500, 2000], [7]),
+        ([100], [15, 20], [700], [7]),
+    ]
     # wie oft variiert werden soll
     run_seeds = list(range(20))
     # wird hier durchgezählt
-    combos = list(itertools.product(slot_configs, domain_configs, event_configs, day_configs, run_seeds))
+    combos = [c for block in sweep_blocks for c in itertools.product(*block, run_seeds)]
 
     # bereits fertige läufe aus der csv lesen, damit nach einem abbruch weitergemacht werden kann
     rows = pd.read_csv(ranking_path).to_dict("records") if ranking_path.exists() else []
@@ -106,7 +108,7 @@ def main(use_parallel: bool = True, save_segments: bool = False):
 
     # zusammenfassung pro slotanzahl
     df_all = pd.DataFrame(rows)
-    summary = df_all.groupby("Anzahl_Slots").agg(
+    summary = df_all.groupby(["Anzahl_Slots", "Max_Domains", "Max_Events", "Max_Days"]).agg(
         INCL_mean=("INCL (%)", "mean"), INCL_std=("INCL (%)", "std"),
         EXCL_mean=("EXCL (%)", "mean"), EXCL_std=("EXCL (%)", "std"),
         n_seeds=("Run_Seed", "count"),
