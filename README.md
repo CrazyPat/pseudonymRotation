@@ -229,3 +229,6 @@ Jede Zeile ist eine Konfiguration. Alle Kennzahlen gibt es zweimal: mit `Incl_` 
 | `Random_Baseline` | Erwartete Rate, wenn der Angreifer zufällig ein anderes Segment wählt |
 | `Users_Linked_Share` | Anteil der Nutzer mit mindestens einem korrekt verketteten Segment |
 | `Visit_Weighted_Rate` | Identification-Rate, gewichtet nach der Anzahl der Aufrufe im Segment |
+
+### Achtung!
+Bei Konfigurationen mit sehr vielen Gleichständen, vor allem bei niedriger Domaingrenze und wenigen Slots, können sich die Identification-Rates zwischen Läufen auf verschiedenen Rechnern oder Paketversionen um wenige Hundertstel Prozentpunkte unterscheiden, da exakte Gleichstände von der Rundung der Gleitkommazahlen abhängen.
