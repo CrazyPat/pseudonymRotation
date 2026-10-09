@@ -213,7 +213,7 @@ Geprüft wird nur beim Wechsel auf eine andere Domain (Rotation-Lock), und zwar 
 ---
 
 ## KI-Nutzung
-Bei der Implementierung, Strukturierung und Syntax-Optimierung der Simulationspipeline und der Auswertungen sowie beim Verfassen dieser README wurden Claude Opus 5.5 und Claude Sonnet 5.5 als Programmierassistenten eingesetzt. Die Beispielrechnung in `Auswertung/beispielrechnung.md` wurde mit Claude Opus 5.5 ausformuliert und selbständig nachgerechnet. ChatGPT 6 Astra wurde für Feedback verwendet. Alle Ergebnisse wurden eigenständig geprüft. Eine vollständige Übersicht enthält das Hilfsmittelverzeichnis der Arbeit.
+Bei der Implementierung, Strukturierung und Syntax-Optimierung der Simulationspipeline und der Auswertungen sowie beim Verfassen dieser README wurden Claude Opus 5.5 und Claude Sonnet 5.5 als Programmierassistenten eingesetzt. Die Beispielrechnung in `Auswertung/beispielrechnung.md` wurde mit Claude Opus 5.5 ausformuliert und selbständig nachgerechnet. ChatGPT 6 Astra wurde für Feedback verwendet. Alle Ergebnisse wurden eigenständig auf geprüft. Eine vollständige Übersicht enthält das Hilfsmittelverzeichnis der Arbeit.
 
 ---
 
