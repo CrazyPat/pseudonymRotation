@@ -114,7 +114,7 @@ def linkage_metrics(df_segments, return_success: bool = False) -> dict:
         "Users_Linked_Share": users_linked,
         "Visit_Weighted_Rate": (visits * success).sum() / visits.sum(),
     }
-    # Erfolg pro Segment zusätzlich zurückgeben, z.B. für die Auswertung nach Surfmenge im Notebook
+    # Erfolg pro Segment zurückgeben für Surfmenge! Wird im Notebook der auswertung verwendet
     if return_success:
         return metrics, success
     return metrics

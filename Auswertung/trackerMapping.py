@@ -81,4 +81,3 @@ if __name__ == "__main__":
     with open(data_dir / "ergebnisse" / "tracker_mapping_stats.json", "w", encoding="utf-8") as f:
         json.dump(stats, f, indent=2)
     print(json.dumps(stats, indent=2))
-    print("Das Ergebniss findest du in ../Data/ergebnisse/tracker_mapping_stats.csv :)")

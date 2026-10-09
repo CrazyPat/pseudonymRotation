@@ -17,9 +17,9 @@ Inhalt ist die Python-Simulations- und Evaluationspipeline für die Bachelorarbe
 │   │   ├── browsing.csv                         # Roher Zenodo-Datensatz: https://zenodo.org/records/4757574
 │   │   ├── browsing_clean.csv                   # Bereinigter Zenodo-Datensatz
 │   │   ├── statsCounterData.csv                 # Statcounter-Export der Browser-Marktanteile (Anhang A)
-│       ├── tracker_mapping_stats.json           # Kennzahlen des verworfenen Tracker-Mappings (über trackerMapping.py)
 │   │   ├── easyprivacy.txt                      # Verworfener Ansatz: EasyPrivacy-Filterliste
-│   │   └── tranco_2019-02-18.txt                # Verworfener Ansatz: Tranco-Liste (ID RNVW)
+│   │   └── tranco_2019-02-18.txt                # Verworfener Ansatz: Tranco-Liste
+│   │   ├── domain_tracker_mapping.json          # Verworfener Ansatz: Zuordnung der Domains zu Trackern über WhoTracks.Me (über trackerMapping.py)
 │   └── ergebnisse/                              # Ergebnisse
 │       ├── raw_sweeps/                          # Rohdaten pro Konfiguration
 │       │   ├── *_events.csv                     # Alle Events einer Konfiguration (save_events=True oder Referenz-Slotreihe)
@@ -27,6 +27,7 @@ Inhalt ist die Python-Simulations- und Evaluationspipeline für die Bachelorarbe
 │       ├── variance_check/                      # Segmente des Varianz-Checks (nur mit save_segments=True)
 │       ├── auswertung/                          # Abbildungen 5.2 bis 5.10 und Tabelle 5.3 der Arbeit (aus dem Notebook)
 │       ├── dataset_stats.json                   # Kennzahlen des Datensatzes
+│       ├── tracker_mapping_stats.json           # Kennzahlen des verworfenen Tracker-Mappings (über trackerMapping.py)
 │       ├── verkettungs_ranking.csv              # Verkettung aller Konfigurationen (über verkettung.py)
 │       ├── verkettungs_ranking_direkt.csv       # Verkettung aller Konfigurationen (über direct_analysis)
 │       ├── sweep_trigger_analyse.csv            # Abschlussgründe aller Konfigurationen (über reason_analysis)
@@ -212,7 +213,7 @@ Geprüft wird nur beim Wechsel auf eine andere Domain (Rotation-Lock), und zwar 
 ---
 
 ## KI-Nutzung
-Zur Unterstützung der Implementierung, Strukturierung und Syntax-Optimierung der Simulationspipeline und der Auswertungen wurden KI-gestützte Programmierassistenten wie Claude Opus 5.5 und Claude Sonnet 5.5 eingesetzt. Die Beispielrechnung in `Auswertung/beispielrechnung.md` wurde mit Claude Opus 5.5 ausformuliert und selbständig nachgerechnet. ChatGPT 6 Astra wurde für Feedback verwendet. Eine vollständige Übersicht enthält das Hilfsmittelverzeichnis der Arbeit.
+Bei der Implementierung, Strukturierung und Syntax-Optimierung der Simulationspipeline und der Auswertungen sowie beim Verfassen dieser README wurden Claude Opus 5.5 und Claude Sonnet 5.5 als Programmierassistenten eingesetzt. Die Beispielrechnung in `Auswertung/beispielrechnung.md` wurde mit Claude Opus 5.5 ausformuliert und selbständig nachgerechnet. ChatGPT 6 Astra wurde für Feedback verwendet. Alle Ergebnisse wurden eigenständig geprüft. Eine vollständige Übersicht enthält das Hilfsmittelverzeichnis der Arbeit.
 
 ---
 
