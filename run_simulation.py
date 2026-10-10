@@ -44,7 +44,7 @@ def main(use_parallel: bool = True, verbose: bool = True, save_events: bool = Tr
     grouped_users = list(df.groupby("panelist_id", sort=False))
     total_users = len(grouped_users)
     
-    # Kompletter block für eine leichte ausführung. Das sind alle Kombinationen
+    # Alle 535 simulierten Parameterkombinationen.
     # Jeder Eintrag ist ein Block aus vier Listen in der Reihenfolge:
     # ([Slots], [Max_Domains], [Max_Events], [Max_Days])
     # Aus jedem Block wird jede Kombination der vier Listen simuliert.
@@ -103,11 +103,11 @@ def main(use_parallel: bool = True, verbose: bool = True, save_events: bool = Tr
     
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Starte Grid Search mit {total_combinations} Kombinationen.\n")
 
-    # Falls wirklich keine logs gespeichert werden sollen dann werden diese hier seperat dazugespeichert. Wichtig für auswertung.! Wird außer im code geändert immer gespeichert
+    # Rohdaten der Referenz-Slotreihe werden immer gespeichert (sofern sie in sweep_blocks stehen), da das Notebook sie für Zeitverlauf, Domainverteilung, Kaltstart und Surfmenge braucht.
     if keep_raw is None:
         keep_raw = [(s, 10, 700, 7) for s in [10, 25, 50, 100, 225, 600]]
 
-    # Direkte Auswertung um speicher zu sparen werden sie direkt geschrieben
+    # Bei direct_analysis werden Verkettung und Abschlussgründe direkt in die *_direkt.csv geschrieben, um Speicher zu sparen.
     linkage_path = Path("Data/ergebnisse/verkettungs_ranking_direkt.csv")
     trigger_path = Path("Data/ergebnisse/sweep_trigger_analyse_direkt.csv")
     linkage_rows = pd.read_csv(linkage_path).to_dict("records") if direct_analysis and linkage_path.exists() else []
@@ -137,7 +137,7 @@ def main(use_parallel: bool = True, verbose: bool = True, save_events: bool = Tr
 
         print(f"\n[{datetime.now().strftime('%H:%M:%S')}] [{idx}/{total_combinations}] Simuliere: Slots={slots}, Domains={domains}, Events={events}, Days={days}")
         
-        cfg = PipelineConfig(num_slots=slots, max_domains=domains, max_events=events, max_days=days, use_tracker_mapping=False)
+        cfg = PipelineConfig(num_slots=slots, max_domains=domains, max_events=events, max_days=days)
         user_chunks = [
             (uid, index, total_users, user_df, cfg, verbose, observation_end)
             for index, (uid, user_df) in enumerate(grouped_users, start=1)
@@ -162,7 +162,7 @@ def main(use_parallel: bool = True, verbose: bool = True, save_events: bool = Tr
                     all_annotated_rows.append(annotated_df)
                 all_segment_records.extend(segment_records)
 
-        # In Ordner speichern wenn sie schon berechnet sind
+        # Events nur speichern, wenn gewünscht oder Referenz-Slotreihe
         if write_events:
             final_df = pd.concat(all_annotated_rows, ignore_index=True)
             final_df.to_csv(events_out_path, index=False)
@@ -205,7 +205,7 @@ if __name__ == "__main__":
     # direct_analysis -> berechnet Verkettung und Abschlussgründe direkt im Speicher, Ergebnisse landen in *_direkt.csv
     # keep_raw        -> Kombinationen, deren Rohdaten immer gespeichert werden (für die Auswertung!)
     
-    # Alles speichern (ALLE Log-Dateien), danach seperat verkettung.py ausführen:
+    # Alles speichern (ALLE Log-Dateien), danach separat verkettung.py ausführen:
     #   save_events=True,  save_segments=True,  direct_analysis=False
     # Wenig Speicherverbrauch, nur die Rohdaten der Referenz-Slotreihe werden gespeichert:
     #   save_events=False, save_segments=False, direct_analysis=True
