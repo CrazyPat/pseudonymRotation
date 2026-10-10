@@ -11,7 +11,7 @@ from enum import Enum
 
 
 class LifecycleState(Enum):
-    """Zustände des Lifecycles inerhalb eines Slots"""
+    """Zustände des Lifecycles innerhalb eines Slots."""
     FRESH = 1
     ACTIVE = 2
     WARM = 3
@@ -22,36 +22,36 @@ class LifecycleState(Enum):
 # Generiert automatisch __init__ und ist Datencontainer für Slot-Zustände.
 @dataclass
 class SlotState:
-    # Meint alle Events, damit auch Domains.
+    # Zählt alle Events (Seitenaufrufe) im aktuellen Segment.
     page_visits: int = 0
     domain_counter: Counter = field(default_factory=Counter)
     warm_logged: bool = False
     warm_reached_at: pd.Timestamp | None = None
     # Eindeutige Domains als Set mit field.
     unique_domains: set = field(default_factory=set)
-    #Zeitstempel speichern, damit das erste und letzte Event (Als pd Timestamp oder none).
+    # Zeitstempel des ersten und letzten Events im Segment (als pd.Timestamp oder None).
     first_event_time: pd.Timestamp | None = None
     last_event_time: pd.Timestamp | None = None
     reset_count: int = 0
 
-    # Counter für Datenmenge in einem Pseudonym = Segment (Von Rotation zu Rotation).
+    # Laufende Nummer des Segments in diesem Slot (von Rotation zu Rotation).
     segment_index: int = 0
     # Initialzustand des Slots.
     current_state: LifecycleState = LifecycleState.FRESH
-    # kummulierte domains.
+    # kumulierte domains des pseudonyms, daran hängt die domaingrenze.
     cum_unique_domains: set = field(default_factory=set)
     # startzeit des Pseudonyms.
     pseudonym_start_time: pd.Timestamp | None = None
 
 
 def update_lifecycle_on_event(slot: SlotState, cfg: PipelineConfig, timestamp: pd.Timestamp) -> None:
-    """Prüft nach einem Event ob eine Zustandänderung notwendig ist."""
+    """Prüft nach einem Event, ob eine Zustandsänderung notwendig ist."""
     # FRESH -> ACTIVE
     if slot.current_state == LifecycleState.FRESH and len(slot.cum_unique_domains) > 0:
-        # Slot auf Acitve setzen wenn Bedinung erfüllt ist und mindestens 1 Event vorhanden ist.
+        # Slot auf ACTIVE setzen, sobald mindestens 1 Event vorhanden ist.
         slot.current_state = LifecycleState.ACTIVE
 
-    # WARM-Threshold berechnen (Threshold wird in der ..config.py --> pipeline_config definiert)
+    # WARM-Threshold berechnen (warm_threshold_ratio wird in der config.py --> PipelineConfig definiert)
     warm_event_threshold = cfg.max_events * cfg.warm_threshold_ratio
     warm_domain_threshold = cfg.max_domains * cfg.warm_threshold_ratio
     warm_days_threshold = cfg.max_days * cfg.warm_threshold_ratio
@@ -60,11 +60,11 @@ def update_lifecycle_on_event(slot: SlotState, cfg: PipelineConfig, timestamp: p
     if slot.current_state == LifecycleState.ACTIVE and not slot.warm_logged:
         # Tage Berechnung seit Start des Pseudonyms
         days = ((timestamp - slot.pseudonym_start_time).total_seconds() / 86400 if slot.pseudonym_start_time is not None else 0)
-        # Wenn der Theshold erreicht ist wird:
+        # Wenn ein Threshold erreicht ist, wird:
         if (slot.page_visits >= warm_event_threshold or len(slot.cum_unique_domains) >= warm_domain_threshold or days >= warm_days_threshold):
             # der Slot auf WARM gesetzt.
             slot.current_state = LifecycleState.WARM
-            # der Slot auf WARM gelogged.
+            # vermerkt, dass WARM schon erreicht wurde.
             slot.warm_logged = True
             # der Zeitstempel gesetzt.
             slot.warm_reached_at = timestamp
@@ -72,8 +72,8 @@ def update_lifecycle_on_event(slot: SlotState, cfg: PipelineConfig, timestamp: p
 
 def threshold_reached(slot: SlotState, cfg: PipelineConfig, current_time: pd.Timestamp) -> str | None:
     """Rotations-Schwellenwert-Prüfung für einen Slot."""
-    # Setzt die Schwellenwerte für Events und Domains aus der Config. Wenn erreicht dann True
-    # Schwellenwert Tracker.
+    # Prüft Events, Domains und Days in dieser Reihenfolge und gibt den ersten erreichten Schwellenwert zurück, sonst None.
+    # Schwellenwert Events.
     if slot.page_visits >= cfg.max_events:
         return "Events"
     # Schwellenwert Domains.
@@ -87,7 +87,7 @@ def threshold_reached(slot: SlotState, cfg: PipelineConfig, current_time: pd.Tim
 
 
 def close_segment(slot: SlotState) -> None:
-    """Session-Grenze für die Auswertung."""
+    """Schließt das Segment für die Auswertung ab und setzt seine Zähler zurück."""
     slot.page_visits = 0
     slot.domain_counter.clear()
     slot.unique_domains.clear()
@@ -95,8 +95,10 @@ def close_segment(slot: SlotState) -> None:
     slot.last_event_time = None
     slot.segment_index += 1
 
+
 def reset_pseudonym(slot: SlotState) -> None:
-    """Löscht den Pseudonym-Zustand --> Kompletter Reset."""
+    """Löscht den Pseudonym-Zustand --> Kompletter Reset (zusammen mit close_segment)."""
+    # RESET wird direkt durchlaufen, da keine Löschdauer simuliert wird (vgl. Abschnitt 4.2.3).
     slot.current_state = LifecycleState.RESET
     slot.cum_unique_domains = set()
     slot.pseudonym_start_time = None
