@@ -16,9 +16,9 @@ top_n = 1330
 
 def load_wtm() -> tuple[pd.DataFrame, pd.DataFrame]:
     """Lädt die WhoTracks.Me-Daten aus dem whotracksme-Paket."""
-    # In der def weil sonst dauerhafte infos in der Simulation geladen werden.
+    # Import erst hier, damit das whotracksme-Paket nur für dieses Skript gebraucht wird.
     from whotracksme.data.loader import DataSource
-    # Iteritems für Series patchen
+    # whotracksme nutzt das in pandas 2 entfernte iteritems --> für Series patchen
     pd.Series.iteritems = getattr(pd.Series, "iteritems", pd.Series.items)
     # Iteritems für DataFrame patchen
     pd.DataFrame.iteritems = getattr(pd.DataFrame, "iteritems", pd.DataFrame.items)
@@ -42,9 +42,9 @@ def build_mapping(st_df: pd.DataFrame, t_df: pd.DataFrame) -> dict[str, list[str
     t_df["category"] = t_df["category"].astype(str).str.strip()
     # Duplikate entfernen
     t_df = t_df.drop_duplicates(subset=["tracker"], keep="last")
-    # Alle Dienste die Ausgeschlossen werden, weil sie nicht relevant sind (v)
+    # Alle Kategorien, die ausgeschlossen werden, weil sie nicht relevant sind.
     # Unterscheidung zwischen Infrastruktur und verhaltensbasierten Trackern.
-    # CND = Content Delivery Network (sorgen für schnellere Ladezeiten von zb Bildern), customer_interaktions = zb. Live-Chat-Fenster für Nutzer, audio_video_player = zb. iFrames, extensions = Browser-Extensions Aufrufe nicht webseite.
+    # cdn = Content Delivery Network (sorgen für schnellere Ladezeiten von z. B. Bildern), hosting = Hosting-Dienste, customer_interaction = z. B. Live-Chat-Fenster für Nutzer, audio_video_player = z. B. eingebettete Player, extensions = Aufrufe von Browser-Extensions statt Webseiten.
     ausgeschlossene_kategorien = {"cdn", "hosting", "customer_interaction", "audio_video_player", "extensions"}
 
     # Tabellen per Left-Join verknüpfen
