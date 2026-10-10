@@ -89,7 +89,7 @@ def dataset_check(input_file: str, output_file: str) -> None:
     stats["events_pro_kalendertag"] = describe_series(pd.Series(events_per_day.values))
 
     # nutzer mit wenig aktivität
-    stats["nutzer_mit_wenig_aktivitaet"] = {
+    stats["nutzer_mit_wenig_aktivität"] = {
         "anzahl_nutzer_unter_10_domains": int((domains_per_user < 10).sum()),
         "anzahl_nutzer_unter_50_events": int((events_per_user < 50).sum()),
         "anteil_nutzer_unter_10_domains": float((domains_per_user < 10).mean()),
