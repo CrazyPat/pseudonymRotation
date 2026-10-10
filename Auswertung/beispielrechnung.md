@@ -26,7 +26,7 @@ Mit $\ln 2 = 0{,}6931$, $\ln 3 = 1{,}0986$, $\ln 4 = 1{,}3863$, $\ln 5 = 1{,}609
 | P3 | $1 + \ln 6 = 2{,}7918$ | $1 + \ln 2 = 1{,}6931$ | 0 |
 | P4 | $1 + \ln 3 = 2{,}0986$ | $1 + \ln 4 = 2{,}3863$ | 0 |
 
-## 2. IDF-Gewicht nach der Gleichung 4.1
+## 2. IDF-Gewicht nach Gleichung 4.1
 
 $$idf(t) = \ln\frac{1 + n}{1 + df(t)} + 1$$
 
@@ -59,7 +59,7 @@ $$\lVert P_3 \rVert = \sqrt{2{,}7918^2 + 2{,}5581^2} = \sqrt{7{,}7939 + 6{,}5436
 
 $$\lVert P_4 \rVert = \sqrt{2{,}0986^2 + 3{,}6053^2} = \sqrt{4{,}4042 + 12{,}9980} = \sqrt{17{,}4022} = 4{,}1716$$
 
-Damit ergeben sich die normierten Vektoren (für Tabelle (4.5)):
+Damit ergeben sich die normierten Vektoren aus Tabelle 4.5:
 
 | Segment | facebook.com | google.com | modellbahn.de |
 |---|---|---|---|
@@ -70,7 +70,7 @@ Damit ergeben sich die normierten Vektoren (für Tabelle (4.5)):
 
 ## 5. Kosinus-Ähnlichkeit nach Gleichung 4.2
 
-Vektoren sind normiert,  deshalb entspricht die Kosinus-Ähnlichkeit dem Skalarprodukt:
+Die Vektoren sind normiert, deshalb entspricht die Kosinus-Ähnlichkeit dem Skalarprodukt:
 
 $$sim_{cos}(P_1, P_2) = 0{,}6355 \cdot 0{,}6821 + 0 \cdot 0 + 0{,}7721 \cdot 0{,}7312 = 0{,}4335 + 0{,}5646 = 0{,}9981$$
 
