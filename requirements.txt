@@ -7,6 +7,6 @@ jinja2
 ipykernel
 scikit-learn
 jupyterlab
-# nicht mehr notwendig war nur für den alten whotracksme datensatz
+# nur für Auswertung/trackerMapping.py (Abschnitt 4.1.2), bei Bedarf separat installieren (siehe README):
 # whotracksme==2018.5.17
 # setuptools<70.0.0
