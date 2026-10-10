@@ -1,3 +1,5 @@
+"""Lädt den Zenodo-Datensatz, bereinigt ihn und berechnet seine Kennzahlen (Abschnitt 4.1.1)."""
+
 from pathlib import Path
 import pandas as pd
 from Funktionen.data.load_dataset import browsing_data
@@ -5,7 +7,7 @@ from Funktionen.data.dataset_check import dataset_check
 
 def run_pipeline(input_file: str, clean_csv: str) -> None:
     """Führt die gesamte Pipeline aus: Laden der Daten und Bereinigung."""
-    # Datensätze prüfen und automatisch herunterladen/bereitstellen
+    # Datensatz prüfen und automatisch herunterladen/bereitstellen
     browsing_data()
 
     # Browsing-Daten einlesen
