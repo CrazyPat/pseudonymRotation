@@ -1,14 +1,14 @@
 import os
 # Umgebungsvars damit jeder Prozess nur 1 Thread nutzt.
-# Multi-Processing
+# OpenMP
 os.environ["OMP_NUM_THREADS"] = "1"
 # Intel Math Kernel lib für lineare algebra
 os.environ["MKL_NUM_THREADS"] = "1"
-# Für Kosinus-Ähnlichkeit
+# OpenBLAS für lineare Algebra in numpy
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 # Für Mac!
 os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
-# FÜr numpy und große dfs
+# numexpr, beschleunigt pandas bei großen dfs
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
 import pandas as pd
@@ -34,13 +34,13 @@ def linkage_metrics(df_segments, return_success: bool = False) -> dict:
     # Geht alle Segmente durch und speichert domain to index alphabetisch. Dh. als bsp. zuerst a domain index 0 dann b domain index 1 usw.
     # Speichert als sparse damit nicht zu groß wird.
     vectorizer = DictVectorizer(sparse=True)
-    # Alle 
+    # Domainhäufigkeiten aller Segmente als Matrix (Zeile = Segment, Spalte = Domain)
     x_counts = vectorizer.fit_transform(df_segments['domain_counter'].tolist())
     tfidf = TfidfTransformer(sublinear_tf=True)
     X = tfidf.fit_transform(x_counts)
     user_ids = df_segments['user_id'].values
 
-    # Nutzer, die in Config nur 1 Segment haben
+    # Anzahl Segmente pro Nutzer
     segments_per_user = pd.Series(user_ids).value_counts()
     # Für Auswertung wie viele Nutzer nur 1 Segment haben.
     share_single_segment_users = float((segments_per_user < 2).mean())
@@ -57,7 +57,7 @@ def linkage_metrics(df_segments, return_success: bool = False) -> dict:
     for start_idx in range(0, n_segments, chunk_size):
         # min für schluss damit kein index out of bounds.
         end_idx = min(start_idx + chunk_size, n_segments)
-        # Kosinus-Ähnlichkeit von chunks wird verglichen mit allen Segementen (NUR domain_counter). Gibt aus ob gleich oder nicht.
+        # Kosinus-Ähnlichkeit der Segmente im Chunk zu allen Segmenten (NUR domain_counter).
         sim_chunk = cosine_similarity(X[start_idx:end_idx], X)
 
         chunk_users = user_ids[start_idx:end_idx]
@@ -79,7 +79,7 @@ def linkage_metrics(df_segments, return_success: bool = False) -> dict:
         own_sims[start_idx:end_idx] = max_own
         other_sims[start_idx:end_idx] = max_other
         
-        # Wenn eigener Wert größer dann ist der Angriff erfolgreich.
+        # Wenn eigener Wert größer (und größer 0) dann ist der Angriff erfolgreich.
         success_mask = (max_own > max_other) & (max_own > 0)
         attacker_success_count += np.sum(success_mask)
         
@@ -98,7 +98,7 @@ def linkage_metrics(df_segments, return_success: bool = False) -> dict:
     users_linked = pd.Series(success).groupby(user_ids).any().mean()
     visits = df_segments['page_visits'].values
     
-        # Chord-Distanz berechnen wird aber nicht weiter verwendet (für zukunft)
+    # Chord-Distanz zum ähnlichsten eigenen Segment, wird gespeichert aber nicht weiter verwendet (vgl. Anhang C)
     chord = np.sqrt(np.maximum(0, 2 - 2 * own_sims))
     metrics = {
         "Avg_Chord_Distance": np.mean(chord),
@@ -114,7 +114,7 @@ def linkage_metrics(df_segments, return_success: bool = False) -> dict:
         "Users_Linked_Share": users_linked,
         "Visit_Weighted_Rate": (visits * success).sum() / visits.sum(),
     }
-    # Erfolg pro Segment zurückgeben für Surfmenge! Wird im Notebook der auswertung verwendet
+    # Erfolg pro Segment zurückgeben für die Surfmenge (Tabelle 5.1). Wird im Notebook der Auswertung verwendet
     if return_success:
         return metrics, success
     return metrics
@@ -159,7 +159,7 @@ def verkettung():
     out_dir = Path("Data/ergebnisse")
     out_dir.mkdir(parents=True, exist_ok=True)
     output_file = out_dir / "verkettungs_ranking.csv"
-    # Schon fertige confs
+    # Ergebnisse der schon fertigen Konfigurationen
     results = []
     # Bereits verarbeitete Konfigs
     processed_set = set()
@@ -192,7 +192,7 @@ def verkettung():
     print(f"Auswertung für {len(files_to_process)} (von {len(segment_files)}) Sweep-Dateien\n")
     # Alle configs die noch verarbeitet werden müssen.
     if files_to_process:
-        # Auf 4 Kerne gesetz kann aber variert werden.
+        # Auf 4 Prozesse gesetzt, kann aber variiert werden.
         with ProcessPoolExecutor(max_workers=4) as executor:
             # Parallelisiert die Verarbeitung und führt process_single_file für jede Datei aus. Speichert die Futures in einem Dict.
             future_to_file = {executor.submit(process_single_file, seg_file): seg_file for seg_file in files_to_process}
