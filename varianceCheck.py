@@ -118,5 +118,5 @@ def main(use_parallel: bool = True, save_segments: bool = False):
     summary.to_csv(summary_path, index=False)
 
 if __name__ == "__main__":
-    # save_segments=True speichert zusätzlich die Segmente jedes Laufs in Data/ergebnisse/variance_check (ca. 50 MB pro Lauf)
+    # save_segments=True speichert zusätzlich die Segmente jedes Laufs in Data/ergebnisse/variance_check
     main(use_parallel=True, save_segments=False)
