@@ -179,7 +179,7 @@ Bei Konfigurationen mit sehr vielen Gleichständen, vor allem bei niedriger Doma
 | Claude Opus 5.5 | Technische Umsetzung der selbst festgelegten Abbildungen, Tabellen und statistischen Tests in Code | `Auswertung/auswertung.ipynb` |
 | Claude Opus 5.5 | Hilfe bei der Formulierung der Dokumentation und der Code-Kommentare | Kommentare im Code, Texte im Notebook, `README.md`, `Data/ergebnisse/README.md` |
 | Claude Opus 5.5 | Ausformulierung der Beispielrechnung | `Auswertung/beispielrechnung.md` |
- ChatGPT 6 Astra | Abschließende Plausibilitätsprüfung auf Verständlichkeit, Logik und Konsistenz zwischen Text und Code | gesamtes Repository |
+| ChatGPT 6 Astra | Abschließende Plausibilitätsprüfung auf Verständlichkeit, Logik und Konsistenz zwischen Text und Code | gesamtes Repository |
 
 Die KI-Tools wurden ausschließlich unterstützend für die in der Tabelle genannten Aufgaben eingesetzt. Alle inhaltlichen Entscheidungen, methodischen Festlegungen und Interpretationen sind eigene Arbeit. Vorschläge wurden geprüft, angepasst und durch eigene Testläufe kontrolliert, alle Ergebnisse selbst nachgerechnet. Eine vollständige Übersicht enthält das Hilfsmittelverzeichnis der Arbeit.
 
