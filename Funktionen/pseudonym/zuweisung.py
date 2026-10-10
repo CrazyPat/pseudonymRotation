@@ -20,7 +20,7 @@ class SlotAssigner:
         self.user_id = user_id
         # Objekt der Konfiguration
         self.cfg = cfg
-        # Random Number
+        # Zufallsgenerator des Nutzers
         self.rng = rng
         # Local Secret für HMAC SHA256
         self.local_secret = local_secret
@@ -32,16 +32,16 @@ class SlotAssigner:
 
     @staticmethod
     def gen_local_secret(user_id: str) -> bytes:
-        """Erezugt ein Locales-Secret für HMAC basierend auf der User-ID"""
-        # Hier gerade noch basierend auf der User-id weil es für die Simulation notwendig ist reproduzierbar zu sein! In einer extension wäre das random und auch nichts bekanntes
+        """Erzeugt ein lokales Secret für HMAC basierend auf der User-ID."""
+        # Hier aus der User-ID abgeleitet, damit auch die Zuordnungstabelle reproduzierbar ist. Auf die Slotwahl hat das Secret keinen Einfluss, die kommt aus dem Zufallsgenerator. In einer Extension wäre das Secret zufällig und nur lokal bekannt.
         return hashlib.sha256(f"pseudonym-rotation:{user_id}".encode("utf-8")).digest()
 
 
     def _hash_domain(self, domain: str) -> str:
-        """Verschleiert eine Domain mit HMAC SHA256 und einem Localen-Secret"""
+        """Verschleiert eine Domain mit HMAC-SHA256 und dem lokalen Secret."""
         # Startet HMAC
         return hmac.new(
-            # Locales-Secret
+            # Lokales Secret
             self.local_secret,
             # String in Bytes
             domain.encode("utf-8"),
@@ -52,12 +52,12 @@ class SlotAssigner:
 
 
     def assign_domain(self, domain_key: str) -> int:
-        """Hasht die Domain und weist einen Slot zu."""
+        """Gibt den Slot einer gehashten Domain zurück und weist neuen Domains zufällig einen Slot zu."""
         # Prüfung ob Domain bereits zugewiesen ist. Falls ja wird Slot zurückgegeben.
         if domain_key in self.domain_to_slot_map:
             return self.domain_to_slot_map[domain_key]
         # Falls keine Zuweisung existiert, wird ein zufälliger Slot zugewiesen.
-        # Randomgenerator wählt zwischen 0 und in der Konfig angegebenen Slots. (numpy dann in py integer)
+        # Zufallsgenerator wählt einen Slot von 0 bis num_slots - 1 (numpy dann in py integer).
         assigned_slot = int(self.rng.integers(0, self.cfg.num_slots))
         # In Mapping eintragen. Domain wird dem Slot zugewiesen.
         self.domain_to_slot_map[domain_key] = assigned_slot
