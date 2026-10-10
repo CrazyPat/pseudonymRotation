@@ -41,7 +41,7 @@ def linkage_row(segments, slots, domains, events, days, run_seed):
     return row
 
 def main(use_parallel: bool = True, save_segments: bool = False):
-    # paths für usersim
+    # pfade
     data_path = Path("Data/datensatz/browsing_clean.csv")
     out_dir = Path("Data/ergebnisse/variance_check")
     ranking_path = Path("Data/ergebnisse/variance_check_ranking.csv")
@@ -64,9 +64,9 @@ def main(use_parallel: bool = True, save_segments: bool = False):
         ([100], [10], [500, 1000, 1250, 1500, 2000], [7]),
         ([100], [15, 20], [700], [7]),
     ]
-    # wie oft variiert werden soll
+    # seeds 0 bis 19, seed 0 entspricht dem hauptlauf
     run_seeds = list(range(20))
-    # wird hier durchgezählt
+    # alle kombinationen aus konfiguration und seed
     combos = [c for block in sweep_blocks for c in itertools.product(*block, run_seeds)]
 
     # bereits fertige läufe aus der csv lesen, damit nach einem abbruch weitergemacht werden kann
@@ -82,7 +82,7 @@ def main(use_parallel: bool = True, save_segments: bool = False):
             continue
 
         print(f"[{datetime.now().strftime('%H:%M:%S')}] [{idx}/{len(combos)}] {file_prefix}")
-        cfg = PipelineConfig(num_slots=slots, max_domains=domains, max_events=events, max_days=days, use_tracker_mapping=False)
+        cfg = PipelineConfig(num_slots=slots, max_domains=domains, max_events=events, max_days=days)
         chunks = [(uid, user_df, cfg, run_seed, observation_end) for uid, user_df in grouped_users]
 
         all_segments = []
@@ -106,7 +106,7 @@ def main(use_parallel: bool = True, save_segments: bool = False):
                 done.add(key)
                 pd.DataFrame(rows).to_csv(ranking_path, index=False)
 
-    # zusammenfassung pro slotanzahl
+    # zusammenfassung pro konfiguration über alle seeds (tabelle b.3)
     df_all = pd.DataFrame(rows)
     summary = df_all.groupby(["Anzahl_Slots", "Max_Domains", "Max_Events", "Max_Days"]).agg(
         INCL_mean=("INCL (%)", "mean"), INCL_std=("INCL (%)", "std"),
