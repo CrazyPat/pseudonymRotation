@@ -1,16 +1,13 @@
-"""
-Simulation eines einzelnen Nutzers über alle Slots
-"""
+"""Simulation eines einzelnen Nutzers über alle Slots."""
 
 import hashlib
 import json
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
 
 from ..config import PipelineConfig
-from ..utils import log_status
 from .lifecycle import (
     LifecycleState,
     SlotState,
@@ -31,9 +28,10 @@ class UserSimulation:
         # Für spätere Auswertung speicherung der Segmente.
         self.segment_records: List[dict] = []
         self.verbose = verbose
-        # Seedgenerator für die Slot-Zuweisung. Jeder Nutzer bekommt sein eigenes Secret.
+        # Zufallsgenerator für die Slot-Zuweisung. Jeder Nutzer bekommt seinen eigenen Seed aus SHA-256 von User-ID und run_seed.
         seed_str = hashlib.sha256(f"{user_id}_{run_seed}".encode("utf-8")).hexdigest()
         self.rng = np.random.default_rng(int(seed_str[:8], 16))
+        # Jeder Nutzer bekommt sein eigenes Secret für den HMAC.
         local_secret = SlotAssigner.gen_local_secret(user_id)
         # Zuweisungslogik aus zuweisung.py
         self.assigner = SlotAssigner(user_id=user_id, cfg=cfg, rng=self.rng, local_secret=local_secret)
@@ -43,14 +41,14 @@ class UserSimulation:
     def _close_slot_segment(self, slot_id: int, reason: str, close_time: pd.Timestamp, trigger_detail: str | None = None) -> None:
         """Datensammlung nach Abschluss eines Segments."""
         slot = self.slots[slot_id]
-        # Wird abgebrochen falls ein Segment keine Events hatte --> wird also vom angreifer nicht mit einbezogen!
+        # Wird abgebrochen, falls ein Segment keine Events hatte --> wird also vom Angreifer nicht mit einbezogen!
         if slot.page_visits <= 0:
             return
         # Setzt das Pseudonym auf SATURATED.
         if reason == "rotation_threshold":
             slot.current_state = LifecycleState.SATURATED
         
-        # Zeigt overshoot nach einem rotation-lock für jeden schwellenwert
+        # Overshoot = Überschreitung der Schwelle bei der Rotation. Events durch den Rotation-Lock, Days in ganzen Tagen (abgerundet), Domains ist immer 0.
         overshoot = 0
         if trigger_detail == "Events":
             overshoot = max(0, slot.page_visits - self.cfg.max_events)
@@ -66,8 +64,8 @@ class UserSimulation:
             "slot_id": slot_id,
             "segment_id": slot.segment_index,
             "start_time": slot.first_event_time,
-            "end_time": close_time, # rotation
-            "last_event_time": slot.last_event_time, #tatsächlich letztes event
+            "end_time": close_time, # rotation bzw. beobachtungsende
+            "last_event_time": slot.last_event_time, # tatsächlich letztes event
             "page_visits": slot.page_visits,
             "unique_domains": len(slot.unique_domains),
             "trigger": reason,
@@ -87,10 +85,10 @@ class UserSimulation:
 
 
     def process_event(self, domain: str, timestamp: pd.Timestamp) -> tuple[int, int]:
-        """Verarbeitet jede Domain und prüft ob Rotation notwendig ist."""
-        # Checkt, in welchen Slot die Domain gehört
+        """Verarbeitet ein Event und prüft bei einem Domainwechsel, ob rotiert werden muss."""
+        # HMAC der Domain als Schlüssel für die Zuordnungstabelle
         domain_key = self.assigner._hash_domain(domain)
-        # Prüfe zuerst die vorherige Domain
+        # Rotation-Lock: nur bei einem Domainwechsel prüfen, zuerst den Slot der vorherigen Domain
         if self.global_last_domain is not None and domain != self.global_last_domain:
             prev_key = self.assigner._hash_domain(self.global_last_domain)
             prev_slot_id = self.assigner.assign_domain(prev_key)
@@ -98,11 +96,11 @@ class UserSimulation:
             # Prüfen ob Schwellenwert erreicht wurde
             reason_detail = threshold_reached(prev_slot, self.cfg, timestamp)
             if reason_detail is not None:
-                # reason = "rotation_threshold" und trigger_detail"Events", "Domains" oder "Days"
+                # reason = "rotation_threshold" und trigger_detail = "Events", "Domains" oder "Days"
                 self._close_slot_segment(prev_slot_id, reason="rotation_threshold", close_time=timestamp, trigger_detail=reason_detail)
 
         new_domain = self.global_last_domain is None or domain != self.global_last_domain
-        # Solange bis der slot nicht rotiert werden muss
+        # Danach den Slot der aktuellen Domain prüfen. Wird er rotiert, bekommt die Domain einen neuen Slot, der wieder geprüft wird.
         while True:
             slot_id = self.assigner.assign_domain(domain_key)
             slot = self.slots[slot_id]
@@ -110,7 +108,7 @@ class UserSimulation:
             reason_detail = threshold_reached(slot, self.cfg, timestamp)
             if reason_detail is None or not new_domain:
                 break
-            # schließen wenn er ein reason_detail hat und von vorne
+            # schließen, wenn er ein reason_detail hat, und von vorne
             self._close_slot_segment(slot_id, reason="rotation_threshold", close_time=timestamp, trigger_detail=reason_detail,)
         # Speichert das aktuelle Segment für den Return
         current_segment = slot.segment_index
@@ -123,19 +121,19 @@ class UserSimulation:
         # Startzeit für Pseudonym.
         if slot.pseudonym_start_time is None:
             slot.pseudonym_start_time = timestamp
-        # Zähler erhöhen für ALLE.
+        # Zähler erhöhen für ALLE Aufrufe, auch wiederholte Aufrufe derselben Domain.
         slot.page_visits += 1
         # Domain wird in Set gespeichert für eindeutige Domains.
         slot.unique_domains.add(domain)
-        # Kummulierte Domains auch zählen.
+        # Kumulierte Domains auch zählen.
         slot.cum_unique_domains.add(domain)
-        # Domain-Counter für Fingerprint erhöhen
+        # Domain-Counter erhöhen, daraus entsteht später der Vektor für den Verkettungsangriff
         slot.domain_counter[domain] += 1
-        # Letzter Zeitstempel wird gesetzt, um Inaktivität zu prüfen.
+        # Letzter Zeitstempel des Segments wird gesetzt.
         slot.last_event_time = timestamp
-        # Lifecycle-Logik prüft den Zustand des Slots und ob eine Rotation notwendig ist.
+        # Lifecycle-Logik aktualisiert den Zustand des Slots (FRESH -> ACTIVE -> WARM). Rotiert wird nur oben beim Domainwechsel.
         update_lifecycle_on_event(slot, self.cfg, timestamp)
-            
+
         return slot_id, current_segment
 
 
@@ -148,23 +146,25 @@ class UserSimulation:
             detail = threshold_reached(slot, self.cfg, observation_end)
             reason = "expired" if detail and slot_id != last_slot else "end_of_stream"
             self._close_slot_segment(slot_id, reason, observation_end, trigger_detail=detail if reason == "expired" else None)
-    
+
 
     def total_resets(self) -> int:
         """Summiert alle Resets über alle Slots."""
         return sum(slot.reset_count for slot in self.slots.values())
 
 
-    def run_user(self, df_user: pd.DataFrame, observation_end) -> pd.DataFrame:
-            results = []
-            for row in df_user.itertuples(index=False):
-                slot_id, seg_id = self.process_event(row.domain, row.used_at)
-                results.append({
-                    "panelist_id": self.user_id,
-                    "domain": row.domain,
-                    "used_at": row.used_at,
-                    "slot_id": slot_id,
-                    "segment_id": seg_id
-                })
-            self.finalize(observation_end)
-            return pd.DataFrame(results)
+    def run_user(self, df_user: pd.DataFrame, observation_end: pd.Timestamp) -> pd.DataFrame:
+        """Simuliert alle Events eines Nutzers und schließt am Ende alle Slots ab."""
+        results = []
+        for row in df_user.itertuples(index=False):
+            slot_id, seg_id = self.process_event(row.domain, row.used_at)
+            results.append({
+                "panelist_id": self.user_id,
+                "domain": row.domain,
+                "used_at": row.used_at,
+                "slot_id": slot_id,
+                "segment_id": seg_id
+            })
+        self.finalize(observation_end)
+        return pd.DataFrame(results)
+
