@@ -1,5 +1,6 @@
 """
-Konfiguration der Simulationsparameter. Nur Platzhalter!
+Konfiguration der Simulationsparameter. Die Standardwerte sind nur Platzhalter,
+die simulierten Werte kommen aus sweep_blocks in run_simulation.py und varianceCheck.py.
 """
 
 from dataclasses import dataclass
@@ -12,4 +13,3 @@ class PipelineConfig:
     max_events: int = 100
     max_days: int = 7
     warm_threshold_ratio: float = 0.8
-    use_tracker_mapping: bool = True
