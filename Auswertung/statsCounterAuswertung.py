@@ -1,4 +1,4 @@
-"""Zählt die Gesamtprozentanzahl aller Browser mit der Chromium-Engine"""
+"""Summiert die Marktanteile aller Browser mit Chromium-Engine (Anhang A, Tabelle A.1)."""
 import pandas as pd
 from pathlib import Path
 
