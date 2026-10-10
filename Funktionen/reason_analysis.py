@@ -1,3 +1,7 @@
+"""
+Fasst Abschlussgründe und Domain-Kennzahlen jeder Sweep-Konfiguration zusammen.
+"""
+
 import pandas as pd
 from pathlib import Path
 
@@ -5,7 +9,7 @@ from pathlib import Path
 def summarize_segments(df, slots, domains, events, days):
     """Berechnet Abschlussgründe und Domain-Kennzahlen für eine Konfiguration."""
     df = df.copy()
-    # days
+    # dauer der segmente in tagen
     df['start_time'] = pd.to_datetime(df['start_time'])
     df['end_time'] = pd.to_datetime(df['end_time'])
     df['duration_days'] = (df['end_time'] - df['start_time']).dt.total_seconds() / 86400.0
@@ -59,6 +63,10 @@ def reason_analysis(sweep_dir="../Data/ergebnisse/raw_sweeps", output_file="../D
             continue
         summary_results.append(summarize_segments(df, slots, domains, events, days))
 
+    # nichts überschreiben, wenn keine segment-dateien da sind
+    if not summary_results:
+        print(f"Keine Segment-Dateien in {sweep_dir}, {output_file} bleibt unverändert.")
+        return
     # in df
     df_summary = pd.DataFrame(summary_results)
     # speichern
