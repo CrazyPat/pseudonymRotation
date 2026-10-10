@@ -172,7 +172,16 @@ Bei Konfigurationen mit sehr vielen Gleichständen, vor allem bei niedriger Doma
 ---
 
 ## KI-Nutzung
-Bei der Implementierung, Strukturierung und Syntax-Optimierung der Simulationspipeline und der Auswertungen sowie beim Verfassen dieser README wurden Claude Opus 5.5 und Claude Sonnet 5.5 als Programmierassistenten eingesetzt. Die Beispielrechnung in `Auswertung/beispielrechnung.md` wurde mit Claude Opus 5.5 ausformuliert und selbständig nachgerechnet. ChatGPT 6 Astra wurde für Feedback verwendet. Alle Ergebnisse wurden eigenständig geprüft. Eine vollständige Übersicht enthält das Hilfsmittelverzeichnis der Arbeit.
+
+| Tool | Verwendungszweck | Betroffene Dateien |
+|---|---|---|
+| Claude Opus 5.5, Claude Sonnet 5.5 | Unterstützung bei Implementierung, Fehlersuche und Überprüfung des Codes | `Funktionen/`, `run_simulation.py`, `verkettung.py`, `varianceCheck.py`, `preprocessing.py`, `Auswertung/trackerMapping.py`|
+| Claude Opus 5.5 | Technische Umsetzung der selbst festgelegten Abbildungen, Tabellen und statistischen Tests in Code | `Auswertung/auswertung.ipynb` |
+| Claude Opus 5.5 | Hilfe bei der Formulierung der Dokumentation und der Code-Kommentare | Kommentare im Code, Texte im Notebook, `README.md`, `Data/ergebnisse/README.md` |
+| Claude Opus 5.5 | Ausformulierung der Beispielrechnung | `Auswertung/beispielrechnung.md` |
+ ChatGPT 6 Astra | Abschließende Plausibilitätsprüfung auf Verständlichkeit, Logik und Konsistenz zwischen Text und Code | gesamtes Repository |
+
+Die KI-Tools wurden ausschließlich unterstützend für die in der Tabelle genannten Aufgaben eingesetzt. Alle inhaltlichen Entscheidungen, methodischen Festlegungen und Interpretationen sind eigene Arbeit. Vorschläge wurden geprüft, angepasst und durch eigene Testläufe kontrolliert, alle Ergebnisse selbst nachgerechnet. Eine vollständige Übersicht enthält das Hilfsmittelverzeichnis der Arbeit.
 
 ## Lizenz
 Der Code steht unter der MIT-Lizenz (siehe `LICENSE`). Die Dateien in `Data/datensatz` stammen aus externen Quellen (Zenodo, Tranco, Statcounter, WhoTracks.Me) und unterliegen deren Nutzungsbedingungen.
