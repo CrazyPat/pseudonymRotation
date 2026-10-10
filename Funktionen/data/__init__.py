@@ -1,5 +1,5 @@
 """
-Läd beide Datensätze herunter, entpackt sie und speichert sie in Data/datensatz/
+Lädt den Zenodo-Datensatz herunter, entpackt ihn und speichert ihn in Data/datensatz/
 """
 
 from .load_dataset import browsing_data
